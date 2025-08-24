@@ -1,10 +1,10 @@
 import { Pokemon } from '@/types/pokemon';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, Edit, Eye, Trash2, Weight, Ruler } from 'lucide-react';
+import { MoreHorizontal, Edit, Eye, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useDeletePokemon } from '@/hooks/usePokemon';
@@ -14,24 +14,24 @@ interface PokemonCardProps {
 }
 
 const typeColors: Record<string, string> = {
-    Fire: 'bg-red-500 hover:bg-red-600',
-    Water: 'bg-blue-500 hover:bg-blue-600',
-    Grass: 'bg-green-500 hover:bg-green-600',
-    Electric: 'bg-yellow-500 hover:bg-yellow-600',
-    Psychic: 'bg-purple-500 hover:bg-purple-600',
-    Ice: 'bg-cyan-400 hover:bg-cyan-500',
-    Dragon: 'bg-indigo-600 hover:bg-indigo-700',
-    Dark: 'bg-gray-700 hover:bg-gray-800',
-    Fairy: 'bg-pink-400 hover:bg-pink-500',
-    Fighting: 'bg-red-700 hover:bg-red-800',
-    Poison: 'bg-purple-600 hover:bg-purple-700',
-    Ground: 'bg-yellow-600 hover:bg-yellow-700',
-    Flying: 'bg-indigo-400 hover:bg-indigo-500',
-    Bug: 'bg-green-600 hover:bg-green-700',
-    Rock: 'bg-yellow-800 hover:bg-yellow-900',
-    Ghost: 'bg-purple-800 hover:bg-purple-900',
-    Steel: 'bg-gray-500 hover:bg-gray-600',
-    Normal: 'bg-gray-400 hover:bg-gray-500',
+    Fire: '#FF6B6B',
+    Water: '#4ECDC4',
+    Grass: '#95E1D3',
+    Electric: '#F9CA24',
+    Psychic: '#A55EEA',
+    Ice: '#74B9FF',
+    Dragon: '#6C5CE7',
+    Dark: '#636E72',
+    Fairy: '#FD79A8',
+    Fighting: '#E17055',
+    Poison: '#A29BFE',
+    Ground: '#FDCB6E',
+    Flying: '#81ECEC',
+    Bug: '#00B894',
+    Rock: '#E84393',
+    Ghost: '#A55EEA',
+    Steel: '#74B9FF',
+    Normal: '#DDD',
 };
 
 export function PokemonCard({ pokemon }: PokemonCardProps) {
@@ -43,14 +43,28 @@ export function PokemonCard({ pokemon }: PokemonCardProps) {
         setDeleteDialogOpen(false);
     };
 
+    const primaryType = pokemon.type[0];
+    const cardColor = typeColors[primaryType] || typeColors.Normal;
+
     return (
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-            <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold capitalize">{pokemon.name}</CardTitle>
+        <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer bg-white rounded-3xl">
+            {/* Header with colored background */}
+            <div
+                className="px-6 py-4 text-white relative"
+                style={{ backgroundColor: cardColor }}
+            >
+                {/* Pokemon number and menu */}
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold opacity-90">
+                        #{pokemon.id.toString().padStart(3, '0')}
+                    </span>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-white hover:bg-white/20 h-8 w-8 opacity-80 hover:opacity-100"
+                            >
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -77,59 +91,89 @@ export function PokemonCard({ pokemon }: PokemonCardProps) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <div className="flex flex-wrap gap-1">
+
+                {/* Pokemon name */}
+                <h3 className="text-2xl font-bold capitalize mb-3 leading-tight">
+                    {pokemon.name}
+                </h3>
+
+                {/* Type badges */}
+                <div className="flex gap-2 mb-4">
                     {pokemon.type.map((type) => (
                         <Badge
                             key={type}
-                            className={`text-white ${typeColors[type] || 'bg-gray-500'}`}
+                            className="bg-white/25 text-white border-0 hover:bg-white/35 font-medium px-3 py-1 text-xs rounded-full"
                         >
                             {type}
                         </Badge>
                     ))}
                 </div>
-            </CardHeader>
 
-            <CardContent className="pb-3">
-                <div className="aspect-square bg-gray-50 rounded-lg mb-4 overflow-hidden">
-                    <img
-                        src={pokemon.imageUrl}
-                        alt={pokemon.name}
-                        className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                        loading="lazy"
-                    />
-                </div>
+                {/* Decorative circles */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-4 -translate-x-4" />
+            </div>
 
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Ruler className="w-4 h-4" />
-                        <span>{pokemon.height}m</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Weight className="w-4 h-4" />
-                        <span>{pokemon.weight}kg</span>
+            {/* White content area */}
+            <CardContent className="p-6 bg-white">
+                {/* Pokemon image */}
+                <div className="relative mb-6 -mt-12 z-10">
+                    <div className="w-32 h-32 mx-auto bg-white rounded-full shadow-lg overflow-hidden border-4 border-white">
+                        <img
+                            src={pokemon.imageUrl}
+                            alt={pokemon.name}
+                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                            loading="lazy"
+                        />
                     </div>
                 </div>
+
+                {/* Pokemon stats */}
+                <div className="space-y-3 mb-4">
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 font-medium">Height</span>
+                        <span className="font-bold text-gray-800">{pokemon.height}m</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 font-medium">Weight</span>
+                        <span className="font-bold text-gray-800">{pokemon.weight}kg</span>
+                    </div>
+                </div>
+
+                {/* Abilities */}
+                <div className="mb-4">
+                    <h4 className="text-xs font-bold text-gray-800 mb-2 uppercase tracking-wider">Abilities</h4>
+                    <div className="flex flex-wrap gap-1">
+                        {pokemon.abilities.slice(0, 3).map((ability) => (
+                            <Badge
+                                key={ability}
+                                variant="outline"
+                                className="text-xs px-2 py-0.5 border-gray-300 text-gray-700"
+                            >
+                                {ability}
+                            </Badge>
+                        ))}
+                        {pokemon.abilities.length > 3 && (
+                            <Badge
+                                variant="outline"
+                                className="text-xs px-2 py-0.5 border-gray-300 text-gray-700"
+                            >
+                                +{pokemon.abilities.length - 3}
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+
+                {/* Action button */}
+                <Link to={`/pokemon/${pokemon.id}`}>
+                    <Button
+                        className="w-full rounded-xl font-medium"
+                        style={{ backgroundColor: cardColor }}
+                    >
+                        View Details
+                    </Button>
+                </Link>
             </CardContent>
-
-            <CardFooter className="pt-3">
-                <div className="w-full">
-                    <div className="text-sm text-gray-600 mb-2">
-                        <span className="font-semibold">Abilities:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {pokemon.abilities.slice(0, 2).map((ability) => (
-                                <Badge key={ability} variant="outline" className="text-xs">
-                                    {ability}
-                                </Badge>
-                            ))}
-                            {pokemon.abilities.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                    +{pokemon.abilities.length - 2} more
-                                </Badge>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </CardFooter>
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
