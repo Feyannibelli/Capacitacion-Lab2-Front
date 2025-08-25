@@ -1,150 +1,167 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Plus, Save, AlertCircle, Zap, Image as ImageIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { X, Plus, AlertCircle } from 'lucide-react';
 import { Pokemon, PokemonType } from '@/types/pokemon';
-import { useState, useEffect } from 'react';
-
-const formSchema = z.object({
-    name: z
-        .string()
-        .min(1, 'Name is required')
-        .max(50, 'Name must be 50 characters or less')
-        .regex(/^[a-zA-Z\s-']+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
-    type: z.nativeEnum(PokemonType, { errorMap: () => ({ message: 'Please select a valid type' }) }),
-    height: z
-        .number({ invalid_type_error: 'Height must be a number' })
-        .min(0, 'Height must be positive')
-        .max(100, 'Height must be less than 100 meters'),
-    weight: z
-        .number({ invalid_type_error: 'Weight must be a number' })
-        .min(0, 'Weight must be positive')
-        .max(10000, 'Weight must be less than 10,000 kg'),
-    imageUrl: z
-        .string()
-        .url('Must be a valid URL')
-        .optional()
-        .or(z.literal('')),
-    abilities: z
-        .array(z.string().min(1, 'Ability name cannot be empty'))
-        .max(6, 'Maximum 6 abilities allowed'),
-});
-
-type FormData = z.infer<typeof formSchema>;
+import { useAbilities } from '@/hooks/usePokemon';
 
 interface PokemonFormProps {
     initialData?: Pokemon;
     onSubmit: (data: Partial<Pokemon>) => void;
     onCancel: () => void;
-    isLoading?: boolean;
-    submitLabel?: string;
+    isLoading: boolean;
+    submitLabel: string;
     error?: Error | null;
 }
 
 const pokemonTypes = Object.values(PokemonType);
 
-const typeColors: Record<PokemonType, string> = {
-    [PokemonType.FIRE]: 'bg-red-500',
-    [PokemonType.WATER]: 'bg-blue-500',
-    [PokemonType.GRASS]: 'bg-green-500',
-    [PokemonType.ELECTRIC]: 'bg-yellow-500',
-    [PokemonType.PSYCHIC]: 'bg-purple-500',
-    [PokemonType.ICE]: 'bg-cyan-400',
-    [PokemonType.DRAGON]: 'bg-indigo-600',
-    [PokemonType.DARK]: 'bg-gray-700',
-    [PokemonType.FAIRY]: 'bg-pink-400',
-    [PokemonType.FIGHTING]: 'bg-red-700',
-    [PokemonType.POISON]: 'bg-purple-600',
-    [PokemonType.GROUND]: 'bg-yellow-600',
-    [PokemonType.FLYING]: 'bg-indigo-400',
-    [PokemonType.BUG]: 'bg-green-600',
-    [PokemonType.ROCK]: 'bg-yellow-800',
-    [PokemonType.GHOST]: 'bg-purple-800',
-    [PokemonType.STEEL]: 'bg-gray-500',
-    [PokemonType.NORMAL]: 'bg-gray-400',
-};
-
-export function PokemonForm({ initialData, onSubmit, onCancel, isLoading = false, submitLabel = "Save Pokémon", error }: PokemonFormProps) {
-    const [newAbility, setNewAbility] = useState('');
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-    const {
-        register,
-        handleSubmit,
-        watch,
-        setValue,
-        formState: { errors, isValid, isDirty },
-        reset,
-    } = useForm<FormData>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: initialData?.name || '',
-            type: initialData?.type || PokemonType.NORMAL,
-            height: initialData?.height || 0,
-            weight: initialData?.weight || 0,
-            imageUrl: initialData?.imageUrl || '',
-            abilities: initialData?.abilities?.map(pa => pa.ability.name) || [],
-        },
+export function PokemonForm({
+                                initialData,
+                                onSubmit,
+                                onCancel,
+                                isLoading,
+                                submitLabel,
+                                error,
+                            }: PokemonFormProps) {
+    const [formData, setFormData] = useState({
+        name: initialData?.name || '',
+        type: initialData?.type || '',
+        height: initialData?.height?.toString() || '',
+        weight: initialData?.weight?.toString() || '',
+        imageUrl: initialData?.imageUrl || '',
+        abilities: initialData?.abilities?.map(pa => pa.ability.name) || [],
     });
 
-    const watchedImageUrl = watch('imageUrl');
-    const watchedAbilities = watch('abilities');
-    const watchedType = watch('type');
+    const [newAbility, setNewAbility] = useState('');
+    const { data: availableAbilities } = useAbilities();
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Reset form when initialData changes
     useEffect(() => {
-        if (watchedImageUrl && watchedImageUrl.startsWith('http')) {
-            setImagePreview(watchedImageUrl);
-        } else {
-            setImagePreview(null);
+        if (initialData) {
+            setFormData({
+                name: initialData.name,
+                type: initialData.type,
+                height: initialData.height.toString(),
+                weight: initialData.weight.toString(),
+                imageUrl: initialData.imageUrl || '',
+                abilities: initialData.abilities?.map(pa => pa.ability.name) || [],
+            });
         }
-    }, [watchedImageUrl]);
+    }, [initialData]);
 
-    const handleFormSubmit = (data: FormData) => {
-        onSubmit({
-            ...data,
-            abilities: data.abilities,
-        });
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.name.trim()) {
+            newErrors.name = 'Name is required';
+        } else if (formData.name.length > 50) {
+            newErrors.name = 'Name must be 50 characters or less';
+        }
+
+        if (!formData.type) {
+            newErrors.type = 'Type is required';
+        }
+
+        const height = parseFloat(formData.height);
+        if (!formData.height || isNaN(height) || height < 0) {
+            newErrors.height = 'Height must be a positive number';
+        }
+
+        const weight = parseFloat(formData.weight);
+        if (!formData.weight || isNaN(weight) || weight < 0) {
+            newErrors.weight = 'Weight must be a positive number';
+        }
+
+        if (formData.imageUrl && !isValidUrl(formData.imageUrl)) {
+            newErrors.imageUrl = 'Please enter a valid URL';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
-    const addAbility = () => {
-        if (!newAbility.trim()) return;
+    const isValidUrl = (string: string) => {
+        try {
+            new URL(string);
+            return true;
+        } catch {
+            return false;
+        }
+    };
 
-        const currentAbilities = watchedAbilities || [];
-        if (currentAbilities.includes(newAbility.trim())) {
-            setNewAbility('');
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
             return;
         }
 
-        setValue('abilities', [...currentAbilities, newAbility.trim()], { shouldValidate: true });
-        setNewAbility('');
+        // Transform form data to match Pokemon interface
+        const pokemonData: Partial<Pokemon> = {
+            name: formData.name.trim(),
+            type: formData.type as PokemonType,
+            height: parseFloat(formData.height),
+            weight: parseFloat(formData.weight),
+            imageUrl: formData.imageUrl.trim() || undefined,
+            abilities: formData.abilities.map(name => ({
+                ability: { id: 0, name: name.trim() }
+            })),
+        };
+
+        onSubmit(pokemonData);
+    };
+
+    const handleChange = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        // Clear error when user starts typing
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+
+    const addAbility = () => {
+        const abilityName = newAbility.trim();
+        if (abilityName && !formData.abilities.includes(abilityName)) {
+            setFormData(prev => ({
+                ...prev,
+                abilities: [...prev.abilities, abilityName]
+            }));
+            setNewAbility('');
+        }
     };
 
     const removeAbility = (abilityToRemove: string) => {
-        const currentAbilities = watchedAbilities || [];
-        setValue('abilities', currentAbilities.filter(ability => ability !== abilityToRemove), { shouldValidate: true });
+        setFormData(prev => ({
+            ...prev,
+            abilities: prev.abilities.filter(ability => ability !== abilityToRemove)
+        }));
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addAbility();
+    const addExistingAbility = (abilityName: string) => {
+        if (!formData.abilities.includes(abilityName)) {
+            setFormData(prev => ({
+                ...prev,
+                abilities: [...prev.abilities, abilityName]
+            }));
         }
     };
 
     return (
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Error Alert */}
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                        {error instanceof Error ? error.message : 'An error occurred while saving the Pokémon'}
+                        {error.message || 'An error occurred while saving the Pokémon'}
                     </AlertDescription>
                 </Alert>
             )}
@@ -152,114 +169,121 @@ export function PokemonForm({ initialData, onSubmit, onCancel, isLoading = false
             {/* Basic Information */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                        <div className={`w-8 h-8 ${typeColors[watchedType]} rounded-lg flex items-center justify-center`}>
-                            <span className="text-white font-bold text-sm">#</span>
-                        </div>
-                        Basic Information
-                    </CardTitle>
+                    <CardTitle>Basic Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Name */}
                         <div className="space-y-2">
-                            <Label htmlFor="name">Name *</Label>
+                            <Label htmlFor="name">
+                                Name <span className="text-red-500">*</span>
+                            </Label>
                             <Input
                                 id="name"
-                                {...register('name')}
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => handleChange('name', e.target.value)}
                                 placeholder="Enter Pokémon name"
-                                className="capitalize"
+                                maxLength={50}
+                                className={errors.name ? 'border-red-500' : ''}
                             />
                             {errors.name && (
-                                <p className="text-sm text-red-600">{errors.name.message}</p>
+                                <p className="text-sm text-red-500">{errors.name}</p>
                             )}
                         </div>
 
                         {/* Type */}
                         <div className="space-y-2">
-                            <Label htmlFor="type">Type *</Label>
+                            <Label htmlFor="type">
+                                Type <span className="text-red-500">*</span>
+                            </Label>
                             <Select
-                                value={watchedType}
-                                onValueChange={(value) => setValue('type', value as PokemonType, { shouldValidate: true })}
+                                value={formData.type}
+                                onValueChange={(value) => handleChange('type', value)}
                             >
-                                <SelectTrigger>
-                                    <SelectValue />
+                                <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
+                                    <SelectValue placeholder="Select a type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {pokemonTypes.map((type) => (
+                                    {pokemonTypes.map(type => (
                                         <SelectItem key={type} value={type}>
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-3 h-3 ${typeColors[type]} rounded-full`} />
-                                                <span className="capitalize">{type.toLowerCase()}</span>
-                                            </div>
+                                            {type.toLowerCase()}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                             {errors.type && (
-                                <p className="text-sm text-red-600">{errors.type.message}</p>
+                                <p className="text-sm text-red-500">{errors.type}</p>
                             )}
                         </div>
 
                         {/* Height */}
                         <div className="space-y-2">
-                            <Label htmlFor="height">Height (meters) *</Label>
+                            <Label htmlFor="height">
+                                Height (m) <span className="text-red-500">*</span>
+                            </Label>
                             <Input
                                 id="height"
                                 type="number"
                                 step="0.1"
                                 min="0"
-                                {...register('height', { valueAsNumber: true })}
+                                value={formData.height}
+                                onChange={(e) => handleChange('height', e.target.value)}
                                 placeholder="0.0"
+                                className={errors.height ? 'border-red-500' : ''}
                             />
                             {errors.height && (
-                                <p className="text-sm text-red-600">{errors.height.message}</p>
+                                <p className="text-sm text-red-500">{errors.height}</p>
                             )}
                         </div>
 
                         {/* Weight */}
                         <div className="space-y-2">
-                            <Label htmlFor="weight">Weight (kg) *</Label>
+                            <Label htmlFor="weight">
+                                Weight (kg) <span className="text-red-500">*</span>
+                            </Label>
                             <Input
                                 id="weight"
                                 type="number"
                                 step="0.1"
                                 min="0"
-                                {...register('weight', { valueAsNumber: true })}
+                                value={formData.weight}
+                                onChange={(e) => handleChange('weight', e.target.value)}
                                 placeholder="0.0"
+                                className={errors.weight ? 'border-red-500' : ''}
                             />
                             {errors.weight && (
-                                <p className="text-sm text-red-600">{errors.weight.message}</p>
+                                <p className="text-sm text-red-500">{errors.weight}</p>
                             )}
                         </div>
                     </div>
 
                     {/* Image URL */}
                     <div className="space-y-2">
-                        <Label htmlFor="imageUrl">Image URL</Label>
-                        <div className="flex gap-2">
-                            <div className="relative flex-1">
-                                <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                <Input
-                                    id="imageUrl"
-                                    {...register('imageUrl')}
-                                    placeholder="https://example.com/pokemon.png"
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
+                        <Label htmlFor="imageUrl">Image URL (optional)</Label>
+                        <Input
+                            id="imageUrl"
+                            type="url"
+                            value={formData.imageUrl}
+                            onChange={(e) => handleChange('imageUrl', e.target.value)}
+                            placeholder="https://example.com/pokemon-image.jpg"
+                            className={errors.imageUrl ? 'border-red-500' : ''}
+                        />
                         {errors.imageUrl && (
-                            <p className="text-sm text-red-600">{errors.imageUrl.message}</p>
+                            <p className="text-sm text-red-500">{errors.imageUrl}</p>
                         )}
-
-                        {/* Image Preview */}
-                        {imagePreview && (
-                            <div className="mt-3">
+                        {formData.imageUrl && !errors.imageUrl && (
+                            <div className="mt-2">
                                 <img
-                                    src={imagePreview}
-                                    alt="Pokemon preview"
-                                    className="w-32 h-32 object-cover rounded-lg border shadow-sm"
-                                    onError={() => setImagePreview(null)}
+                                    src={formData.imageUrl}
+                                    alt="Preview"
+                                    className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                                    onError={(e) => {
+                                        setErrors(prev => ({
+                                            ...prev,
+                                            imageUrl: 'Could not load image from this URL'
+                                        }));
+                                    }}
                                 />
                             </div>
                         )}
@@ -270,113 +294,115 @@ export function PokemonForm({ initialData, onSubmit, onCancel, isLoading = false
             {/* Abilities */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                            <Zap className="w-4 h-4 text-white" />
-                        </div>
-                        Abilities
-                    </CardTitle>
+                    <CardTitle>Abilities</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Add New Ability */}
-                    <div className="space-y-3">
-                        <Label>Add Ability</Label>
-                        <div className="flex gap-2">
-                            <Input
-                                value={newAbility}
-                                onChange={(e) => setNewAbility(e.target.value)}
-                                placeholder="Enter ability name (e.g., Static, Blaze)"
-                                onKeyPress={handleKeyPress}
-                                className="flex-1"
-                            />
-                            <Button
-                                type="button"
-                                onClick={addAbility}
-                                disabled={!newAbility.trim() || (watchedAbilities?.length || 0) >= 6}
-                                size="sm"
-                                className="bg-purple-600 hover:bg-purple-700"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </Button>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            Maximum 6 abilities. Press Enter or click + to add.
-                        </p>
-                    </div>
-
                     {/* Current Abilities */}
-                    <div className="space-y-3">
-                        <Label>Selected Abilities ({watchedAbilities?.length || 0}/6)</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {watchedAbilities && watchedAbilities.length > 0 ? (
-                                watchedAbilities.map((ability) => (
+                    {formData.abilities.length > 0 && (
+                        <div>
+                            <Label>Current Abilities</Label>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {formData.abilities.map((ability, index) => (
                                     <Badge
-                                        key={ability}
+                                        key={index}
                                         variant="secondary"
-                                        className="flex items-center gap-2 px-3 py-1 text-sm"
+                                        className="flex items-center gap-2"
                                     >
                                         {ability}
                                         <button
                                             type="button"
                                             onClick={() => removeAbility(ability)}
-                                            className="ml-1 hover:text-red-500 transition-colors"
+                                            className="ml-1 hover:text-red-500"
                                         >
                                             <X className="w-3 h-3" />
                                         </button>
                                     </Badge>
-                                ))
-                            ) : (
-                                <p className="text-sm text-gray-500 py-4">No abilities selected</p>
-                            )}
+                                ))}
+                            </div>
                         </div>
-                        {errors.abilities && (
-                            <p className="text-sm text-red-600">{errors.abilities.message}</p>
+                    )}
+
+                    {/* Add New Ability */}
+                    <div className="space-y-4">
+                        <div className="flex gap-2">
+                            <Input
+                                type="text"
+                                value={newAbility}
+                                onChange={(e) => setNewAbility(e.target.value)}
+                                placeholder="Enter ability name"
+                                className="flex-1"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addAbility();
+                                    }
+                                }}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={addAbility}
+                                disabled={!newAbility.trim()}
+                            >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add
+                            </Button>
+                        </div>
+
+                        {/* Existing Abilities */}
+                        {availableAbilities && availableAbilities.length > 0 && (
+                            <div>
+                                <Label className="text-sm text-gray-600">
+                                    Or select from existing abilities:
+                                </Label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {availableAbilities
+                                        .filter(ability => !formData.abilities.includes(ability.name))
+                                        .map(ability => (
+                                            <Button
+                                                key={ability.id}
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => addExistingAbility(ability.name)}
+                                                className="text-xs"
+                                            >
+                                                {ability.name}
+                                            </Button>
+                                        ))
+                                    }
+                                </div>
+                            </div>
                         )}
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <Button
-                    type="submit"
-                    disabled={isLoading || !isValid}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                >
-                    {isLoading ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                            Saving...
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <Save className="w-4 h-4" />
-                            {submitLabel}
-                        </div>
-                    )}
-                </Button>
-
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-end">
                 <Button
                     type="button"
-                    onClick={onCancel}
                     variant="outline"
+                    onClick={onCancel}
                     disabled={isLoading}
-                    className="font-medium"
+                    className="sm:order-1"
                 >
                     Cancel
                 </Button>
-
-                {initialData && isDirty && (
-                    <Button
-                        type="button"
-                        onClick={() => reset()}
-                        variant="ghost"
-                        disabled={isLoading}
-                        className="text-gray-600"
-                    >
-                        Reset Changes
-                    </Button>
-                )}
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="sm:order-2"
+                >
+                    {isLoading ? (
+                        <>
+                            <LoadingSpinner size="sm" className="mr-2" />
+                            Saving...
+                        </>
+                    ) : (
+                        submitLabel
+                    )}
+                </Button>
             </div>
         </form>
     );

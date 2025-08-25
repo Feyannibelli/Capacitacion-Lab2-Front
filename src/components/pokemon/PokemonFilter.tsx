@@ -1,6 +1,7 @@
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Search, X } from 'lucide-react';
 import { PokemonType } from '@/types/pokemon';
 
@@ -13,13 +14,22 @@ interface PokemonFiltersProps {
 
 const pokemonTypes = Object.values(PokemonType);
 
-export function PokemonFilters({ search, type, onSearchChange, onTypeChange }: PokemonFiltersProps) {
+export function PokemonFilters({
+                                   search,
+                                   type,
+                                   onSearchChange,
+                                   onTypeChange,
+                               }: PokemonFiltersProps) {
     return (
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+                <Label htmlFor="search" className="sr-only">Search Pokémon</Label>
+                <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
+                        id="search"
+                        type="text"
                         placeholder="Search Pokémon by name..."
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
@@ -34,34 +44,24 @@ export function PokemonFilters({ search, type, onSearchChange, onTypeChange }: P
                         </button>
                     )}
                 </div>
+            </div>
 
+            {/* Type Filter */}
+            <div className="lg:w-48">
+                <Label htmlFor="type-select" className="sr-only">Filter by Type</Label>
                 <Select value={type} onValueChange={onTypeChange}>
-                    <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Filter by type" />
+                    <SelectTrigger id="type-select">
+                        <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Types</SelectItem>
-                        {pokemonTypes.map((pokemonType) => (
-                            <SelectItem key={pokemonType} value={pokemonType} className="capitalize">
+                        <SelectItem value="">All types</SelectItem>
+                        {pokemonTypes.map(pokemonType => (
+                            <SelectItem key={pokemonType} value={pokemonType}>
                                 {pokemonType.toLowerCase()}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-
-                {(search || type) && (
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            onSearchChange('');
-                            onTypeChange('');
-                        }}
-                        className="flex items-center gap-2"
-                    >
-                        <X className="w-4 h-4" />
-                        Clear Filters
-                    </Button>
-                )}
             </div>
         </div>
     );
