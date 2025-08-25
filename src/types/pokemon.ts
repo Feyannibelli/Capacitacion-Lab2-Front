@@ -1,18 +1,47 @@
+export enum PokemonType {
+    NORMAL = 'NORMAL',
+    FIRE = 'FIRE',
+    WATER = 'WATER',
+    GRASS = 'GRASS',
+    ELECTRIC = 'ELECTRIC',
+    ICE = 'ICE',
+    FIGHTING = 'FIGHTING',
+    POISON = 'POISON',
+    GROUND = 'GROUND',
+    FLYING = 'FLYING',
+    PSYCHIC = 'PSYCHIC',
+    BUG = 'BUG',
+    ROCK = 'ROCK',
+    GHOST = 'GHOST',
+    DARK = 'DARK',
+    DRAGON = 'DRAGON',
+    STEEL = 'STEEL',
+    FAIRY = 'FAIRY'
+}
+
+export interface Ability {
+    id: number;
+    name: string;
+}
+
+export interface PokemonAbility {
+    ability: Ability;
+}
+
 export interface Pokemon {
     id: number;
     name: string;
-    type: string[];
+    type: PokemonType;
     height: number;
     weight: number;
-    imageUrl: string;
-    abilities: string[];
-    moves: string[];
-    createdAt?: string;
-    updatedAt?: string;
+    imageUrl?: string;
+    abilities: PokemonAbility[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface PokemonListResponse {
-    pokemon: Pokemon[];
+    items: Pokemon[];
     total: number;
     page: number;
     limit: number;
@@ -20,22 +49,24 @@ export interface PokemonListResponse {
 }
 
 export interface PokemonFilters {
-    search: string;
-    type: string;
-    page: number;
-    limit: number;
+    search?: string;
+    type?: PokemonType;
+    page?: number;
+    limit?: number;
+    sortBy?: 'id' | 'name' | 'type';
+    order?: 'asc' | 'desc';
+    abilityIds?: number[];
 }
 
 export interface CreatePokemonData {
     name: string;
-    type: string[];
+    type: PokemonType;
     height: number;
     weight: number;
-    imageUrl: string;
-    abilities: string[];
-    moves: string[];
+    imageUrl?: string;
+    abilities?: string[];
 }
 
-export interface UpdatePokemonData extends CreatePokemonData {
+export interface UpdatePokemonData extends Partial<CreatePokemonData> {
     id: number;
 }

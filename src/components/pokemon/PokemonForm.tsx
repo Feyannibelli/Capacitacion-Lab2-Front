@@ -1,27 +1,14 @@
-import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, ImageIcon } from 'lucide-react';
-import { Pokemon, CreatePokemonData, UpdatePokemonData } from '@/types/pokemon';
-
-const pokemonSchema = z.object({
-    name: z.string().min(1, 'Name is required').max(50, 'Name too long'),
-    type: z.array(z.string()).min(1, 'At least one type is required').max(2, 'Maximum 2 types allowed'),
-    height: z.number().min(0.1, 'Height must be positive').max(50, 'Height too large'),
-    weight: z.number().min(0.1, 'Weight must be positive').max(1000, 'Weight too large'),
-    imageUrl: z.string().url('Must be a valid URL'),
-    abilities: z.array(z.string()).min(1, 'At least one ability is required'),
-    moves: z.array(z.string()).min(1, 'At least one move is required'),
-});
-
-type PokemonFormData = z.infer<typeof pokemonSchema>;
+import { Badge } from '@/components/ui/badge';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Plus, X, Save, Image } from 'lucide-react';
+import { Pokemon, CreatePokemonData, UpdatePokemonData, PokemonType } from '@/types/pokemon';
+import { useAbilities } from '@/hooks/usePokemon';
 
 interface PokemonFormProps {
     pokemon?: Pokemon;
@@ -29,295 +16,284 @@ interface PokemonFormProps {
     isLoading?: boolean;
 }
 
-const POKEMON_TYPES = [
-    'Normal', 'Fire', 'Water', 'Electric', 'Grass', 'Ice',
-    'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic',
-    'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'
-];
+const pokemonTypes = Object.values(PokemonType);
 
 export function PokemonForm({ pokemon, onSubmit, isLoading = false }: PokemonFormProps) {
-    const [imagePreview, setImagePreview] = useState(pokemon?.imageUrl || '');
-    const isEditing = !!pokemon;
-
-    const {
-        register,
-        handleSubmit,
-        control,
-        watch,
-        setValue,
-        formState: { errors },
-    } = useForm<PokemonFormData>({
-        resolver: zodResolver(pokemonSchema),
-        defaultValues: pokemon ? {
-            name: pokemon.name,
-            type: pokemon.type,
-            height: pokemon.height,
-            weight: pokemon.weight,
-            imageUrl: pokemon.imageUrl,
-            abilities: pokemon.abilities,
-            moves: pokemon.moves,
-        } : {
-            name: '',
-            type: [],
-            height: 0,
-            weight: 0,
-            imageUrl: '',
-            abilities: [''],
-            moves: [''],
-        },
+    const [formData, setFormData] = useState({
+        name: '',
+        type: '' as PokemonType,
+        height: 0,
+        weight: 0,
+        imageUrl: '',
+        abilities: [] as string[],
     });
 
-    const {
-        fields: abilityFields,
-        append: appendAbility,
-        remove: removeAbility,
-    } = useFieldArray({
-        control,
-        name: 'abilities',
-    });
+    const [newAbility, setNewAbility] = useState('');
+    const { data: availableAbilities } = useAbilities();
 
-    const {
-        fields: moveFields,
-        append: appendMove,
-        remove: removeMove,
-    } = useFieldArray({
-        control,
-        name: 'moves',
-    });
-
-    const watchImageUrl = watch('imageUrl');
-    const watchTypes = watch('type');
-
-    // Update image preview when URL changes
-    useState(() => {
-        if (watchImageUrl && watchImageUrl !== imagePreview) {
-            setImagePreview(watchImageUrl);
+    useEffect(() => {
+        if (pokemon) {
+            setFormData({
+                name: pokemon.name,
+                type: pokemon.type,
+                height: pokemon.height,
+                weight: pokemon.weight,
+                imageUrl: pokemon.imageUrl || '',
+                abilities: pokemon.abilities.map(pa => pa.ability.name),
+            });
         }
-    }, [watchImageUrl]);
+    }, [pokemon]);
 
-    const handleFormSubmit = (data: PokemonFormData) => {
-        if (isEditing) {
-            onSubmit({ ...data, id: pokemon.id });
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (pokemon) {
+            // Update existing pokemon
+            onSubmit({
+                id: pokemon.id,
+                ...formData,
+            });
         } else {
-            onSubmit(data);
+            // Create new pokemon
+            onSubmit(formData);
         }
     };
 
-    const addType = (type: string) => {
-        if (watchTypes.length < 2 && !watchTypes.includes(type)) {
-            setValue('type', [...watchTypes, type]);
+    const handleInputChange = (field: string, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const addAbility = () => {
+        if (newAbility.trim() && !formData.abilities.includes(newAbility.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                abilities: [...prev.abilities, newAbility.trim()]
+            }));
+            setNewAbility('');
         }
     };
 
-    const removeType = (typeToRemove: string) => {
-        setValue('type', watchTypes.filter(type => type !== typeToRemove));
+    const removeAbility = (abilityToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            abilities: prev.abilities.filter(a => a !== abilityToRemove)
+        }));
+    };
+
+    const addExistingAbility = (abilityName: string) => {
+        if (!formData.abilities.includes(abilityName)) {
+            setFormData(prev => ({
+                ...prev,
+                abilities: [...prev.abilities, abilityName]
+            }));
+        }
     };
 
     return (
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Basic Info */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Basic Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="name">Name</Label>
+        <form onSubmit={handleSubmit} className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">#</span>
+                        </div>
+                        Basic Information
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Name *</Label>
                             <Input
                                 id="name"
-                                {...register('name')}
+                                value={formData.name}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
                                 placeholder="Enter Pokémon name"
+                                required
+                                className="capitalize"
                             />
-                            {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>}
                         </div>
 
-                        <div>
-                            <Label>Types (max 2)</Label>
-                            <Select onValueChange={addType} disabled={watchTypes.length >= 2}>
+                        <div className="space-y-2">
+                            <Label htmlFor="type">Type *</Label>
+                            <Select
+                                value={formData.type}
+                                onValueChange={(value) => handleInputChange('type', value as PokemonType)}
+                                required
+                            >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Add a type" />
+                                    <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {POKEMON_TYPES.filter(type => !watchTypes.includes(type)).map((type) => (
-                                        <SelectItem key={type} value={type}>
-                                            {type}
+                                    {pokemonTypes.map((type) => (
+                                        <SelectItem key={type} value={type} className="capitalize">
+                                            {type.toLowerCase()}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {watchTypes.map((type) => (
-                                    <Badge key={type} variant="secondary" className="flex items-center gap-1">
-                                        {type}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-4 w-4 p-0 hover:bg-transparent"
-                                            onClick={() => removeType(type)}
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </Button>
-                                    </Badge>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="height">Height (m) *</Label>
+                            <Input
+                                id="height"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={formData.height}
+                                onChange={(e) => handleInputChange('height', parseFloat(e.target.value) || 0)}
+                                placeholder="0.0"
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="weight">Weight (kg) *</Label>
+                            <Input
+                                id="weight"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={formData.weight}
+                                onChange={(e) => handleInputChange('weight', parseFloat(e.target.value) || 0)}
+                                placeholder="0.0"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="imageUrl">Image URL</Label>
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    id="imageUrl"
+                                    type="url"
+                                    value={formData.imageUrl}
+                                    onChange={(e) => handleInputChange('imageUrl', e.target.value)}
+                                    placeholder="https://example.com/pokemon.png"
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                        {formData.imageUrl && (
+                            <div className="mt-3">
+                                <img
+                                    src={formData.imageUrl}
+                                    alt="Preview"
+                                    className="w-32 h-32 object-cover rounded-lg border shadow-sm"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">⚡</span>
+                        </div>
+                        Abilities
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Existing Abilities */}
+                    {availableAbilities && availableAbilities.length > 0 && (
+                        <div className="space-y-3">
+                            <Label>Available Abilities</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {availableAbilities.map((ability) => (
+                                    <Button
+                                        key={ability.id}
+                                        type="button"
+                                        variant={formData.abilities.includes(ability.name) ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => addExistingAbility(ability.name)}
+                                        className="text-xs"
+                                    >
+                                        {ability.name}
+                                        {formData.abilities.includes(ability.name) && (
+                                            <X className="w-3 h-3 ml-1" />
+                                        )}
+                                    </Button>
                                 ))}
                             </div>
-                            {errors.type && <p className="text-sm text-red-600 mt-1">{errors.type.message}</p>}
                         </div>
+                    )}
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="height">Height (m)</Label>
-                                <Input
-                                    id="height"
-                                    type="number"
-                                    step="0.1"
-                                    {...register('height', { valueAsNumber: true })}
-                                    placeholder="1.2"
-                                />
-                                {errors.height && <p className="text-sm text-red-600 mt-1">{errors.height.message}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="weight">Weight (kg)</Label>
-                                <Input
-                                    id="weight"
-                                    type="number"
-                                    step="0.1"
-                                    {...register('weight', { valueAsNumber: true })}
-                                    placeholder="25.5"
-                                />
-                                {errors.weight && <p className="text-sm text-red-600 mt-1">{errors.weight.message}</p>}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Image */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Image</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="imageUrl">Image URL</Label>
+                    {/* Add New Ability */}
+                    <div className="space-y-3">
+                        <Label>Add New Ability</Label>
+                        <div className="flex gap-2">
                             <Input
-                                id="imageUrl"
-                                {...register('imageUrl')}
-                                placeholder="https://example.com/pokemon-image.jpg"
+                                value={newAbility}
+                                onChange={(e) => setNewAbility(e.target.value)}
+                                placeholder="Enter ability name"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addAbility();
+                                    }
+                                }}
                             />
-                            {errors.imageUrl && <p className="text-sm text-red-600 mt-1">{errors.imageUrl.message}</p>}
+                            <Button
+                                type="button"
+                                onClick={addAbility}
+                                disabled={!newAbility.trim()}
+                                size="sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
                         </div>
-
-                        {imagePreview && (
-                            <div className="border rounded-lg p-4">
-                                <p className="text-sm font-medium mb-2">Preview:</p>
-                                <div className="w-48 h-48 mx-auto bg-gray-50 rounded-lg overflow-hidden">
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="w-full h-full object-cover"
-                                        onError={() => setImagePreview('')}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                        {!imagePreview && (
-                            <div className="w-48 h-48 mx-auto bg-gray-50 rounded-lg flex items-center justify-center">
-                                <ImageIcon className="w-12 h-12 text-gray-400" />
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Abilities */}
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardTitle>Abilities</CardTitle>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => appendAbility('')}
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Ability
-                        </Button>
                     </div>
-                </CardHeader>
-                <CardContent>
+
+                    {/* Selected Abilities */}
                     <div className="space-y-3">
-                        {abilityFields.map((field, index) => (
-                            <div key={field.id} className="flex gap-2">
-                                <Input
-                                    {...register(`abilities.${index}`)}
-                                    placeholder="Enter ability name"
-                                />
-                                {abilityFields.length > 1 && (
-                                    <Button
+                        <Label>Selected Abilities ({formData.abilities.length})</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {formData.abilities.map((ability) => (
+                                <Badge
+                                    key={ability}
+                                    variant="secondary"
+                                    className="flex items-center gap-2 px-3 py-1"
+                                >
+                                    {ability}
+                                    <button
                                         type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => removeAbility(index)}
+                                        onClick={() => removeAbility(ability)}
+                                        className="ml-1 hover:text-red-500"
                                     >
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                        {formData.abilities.length === 0 && (
+                            <p className="text-sm text-gray-500">No abilities selected</p>
+                        )}
                     </div>
-                    {errors.abilities && <p className="text-sm text-red-600 mt-2">{errors.abilities.message}</p>}
                 </CardContent>
             </Card>
 
-            {/* Moves */}
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardTitle>Moves</CardTitle>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => appendMove('')}
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Move
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {moveFields.map((field, index) => (
-                            <div key={field.id} className="flex gap-2">
-                                <Input
-                                    {...register(`moves.${index}`)}
-                                    placeholder="Enter move name"
-                                />
-                                {moveFields.length > 1 && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => removeMove(index)}
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                    {errors.moves && <p className="text-sm text-red-600 mt-2">{errors.moves.message}</p>}
-                </CardContent>
-            </Card>
-
-            <div className="flex justify-end gap-3 pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                    Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading ? 'Saving...' : isEditing ? 'Update Pokémon' : 'Create Pokémon'}
+            <div className="flex gap-4 pt-6">
+                <Button
+                    type="submit"
+                    disabled={isLoading || !formData.name || !formData.type}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                >
+                    {isLoading ? (
+                        <LoadingSpinner size="sm" />
+                    ) : (
+                        <Save className="w-4 h-4" />
+                    )}
+                    {isLoading ? 'Saving...' : pokemon ? 'Update Pokémon' : 'Create Pokémon'}
                 </Button>
             </div>
         </form>

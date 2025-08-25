@@ -1,4 +1,4 @@
-import { useQueryState } from 'nuqs';
+import { useState } from 'react';
 import { usePokemonList } from '@/hooks/usePokemon';
 import { PokemonCard } from '@/components/pokemon/PokemonCard';
 import { PokemonFilters } from '@/components/pokemon/PokemonFilter';
@@ -6,15 +6,16 @@ import { LoadingGrid, LoadingSpinner } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ChevronLeft, ChevronRight, AlertCircle, Grid, List } from 'lucide-react';
+import { Pokemon, PokemonType } from '@/types/pokemon';
 import { mockPokemon } from '@/lib/api';
-import { useState } from 'react';
 
 export function HomePage() {
-    const [search, setSearch] = useQueryState('search', { defaultValue: '' });
-    const [type, setType] = useQueryState('type', { defaultValue: '' });
-    const [page, setPage] = useQueryState('page', { defaultValue: 1, parse: Number, serialize: String });
+    const [search, setSearch] = useState('');
+    const [type, setType] = useState('');
+    const [page, setPage] = useState(1);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [sortBy, setSortBy] = useState<'number' | 'name'>('number');
+    const [sortBy, setSortBy] = useState<'id' | 'name' | 'type'>('id');
+    const [order, setOrder] = useState<'asc' | 'desc'>('asc');
     const limit = 12;
 
     const {
@@ -23,19 +24,31 @@ export function HomePage() {
         error,
         isFetching,
     } = usePokemonList({
-        search,
-        type,
+        search: search || undefined,
+        type: type as PokemonType || undefined,
         page,
         limit,
+        sortBy,
+        order,
     });
 
-    const pokemon = data?.pokemon || mockPokemon;
-    const totalPages = data?.totalPages || Math.ceil(mockPokemon.length / limit);
-    const total = data?.total || mockPokemon.length;
+    const pokemon = data?.items || [];
+    const totalPages = data?.totalPages || 1;
+    const total = data?.total || 0;
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handlePokemonView = (pokemon: Pokemon) => {
+        // In a real app, this would navigate to detail page
+        console.log('View pokemon:', pokemon);
+    };
+
+    const handlePokemonEdit = (pokemon: Pokemon) => {
+        // In a real app, this would navigate to edit page
+        console.log('Edit pokemon:', pokemon);
     };
 
     if (isLoading) {
@@ -56,7 +69,7 @@ export function HomePage() {
         );
     }
 
-    if (error) {
+    if (error && pokemon.length === 0) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
                 <div className="max-w-7xl mx-auto px-6 py-8">
@@ -74,7 +87,12 @@ export function HomePage() {
                             </Alert>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {mockPokemon.map((pokemon) => (
-                                    <PokemonCard key={pokemon.id} pokemon={pokemon} />
+                                    <PokemonCard
+                                        key={pokemon.id}
+                                        pokemon={pokemon}
+                                        onView={handlePokemonView}
+                                        onEdit={handlePokemonEdit}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -83,23 +101,6 @@ export function HomePage() {
             </div>
         );
     }
-
-    const filteredPokemon = pokemon.filter(p => {
-        const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-        const matchesType = !type || p.type.includes(type);
-        return matchesSearch && matchesType;
-    });
-
-    // Sort pokemon
-    const sortedPokemon = [...filteredPokemon].sort((a, b) => {
-        if (sortBy === 'name') {
-            return a.name.localeCompare(b.name);
-        }
-        return a.id - b.id;
-    });
-
-    const paginatedPokemon = sortedPokemon.slice((page - 1) * limit, page * limit);
-    const calculatedTotalPages = Math.ceil(sortedPokemon.length / limit);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -117,7 +118,7 @@ export function HomePage() {
                                             Loading...
                                         </span>
                                     ) : (
-                                        `Discover ${sortedPokemon.length} amazing Pokémon`
+                                        `Discover ${total} amazing Pokémon`
                                     )}
                                 </p>
                             </div>
@@ -127,9 +128,9 @@ export function HomePage() {
                                     <span className="text-red-100 text-sm">Sort by:</span>
                                     <div className="flex rounded-lg bg-white/10 p-1">
                                         <button
-                                            onClick={() => setSortBy('number')}
+                                            onClick={() => setSortBy('id')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                                sortBy === 'number'
+                                                sortBy === 'id'
                                                     ? 'bg-white text-red-600'
                                                     : 'text-red-100 hover:text-white'
                                             }`}
@@ -146,8 +147,43 @@ export function HomePage() {
                                         >
                                             Name
                                         </button>
+                                        <button
+                                            onClick={() => setSortBy('type')}
+                                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                                sortBy === 'type'
+                                                    ? 'bg-white text-red-600'
+                                                    : 'text-red-100 hover:text-white'
+                                            }`}
+                                        >
+                                            Type
+                                        </button>
                                     </div>
                                 </div>
+
+                                {/* Order Controls */}
+                                <div className="flex rounded-lg bg-white/10 p-1">
+                                    <button
+                                        onClick={() => setOrder('asc')}
+                                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                            order === 'asc'
+                                                ? 'bg-white text-red-600'
+                                                : 'text-red-100 hover:text-white'
+                                        }`}
+                                    >
+                                        ↑ ASC
+                                    </button>
+                                    <button
+                                        onClick={() => setOrder('desc')}
+                                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                            order === 'desc'
+                                                ? 'bg-white text-red-600'
+                                                : 'text-red-100 hover:text-white'
+                                        }`}
+                                    >
+                                        ↓ DESC
+                                    </button>
+                                </div>
+
                                 {/* View Mode Toggle */}
                                 <div className="flex rounded-lg bg-white/10 p-1">
                                     <button
@@ -187,7 +223,7 @@ export function HomePage() {
 
                     {/* Content */}
                     <div className="p-8">
-                        {sortedPokemon.length === 0 ? (
+                        {pokemon.length === 0 ? (
                             <div className="text-center py-16">
                                 <div className="text-gray-300 mb-6">
                                     <svg className="w-24 h-24 mx-auto" fill="currentColor" viewBox="0 0 20 20">
@@ -203,53 +239,57 @@ export function HomePage() {
                             <>
                                 {viewMode === 'grid' ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {paginatedPokemon.map((pokemon) => (
-                                            <PokemonCard key={pokemon.id} pokemon={pokemon} />
+                                        {pokemon.map((poke) => (
+                                            <PokemonCard
+                                                key={poke.id}
+                                                pokemon={poke}
+                                                onView={handlePokemonView}
+                                                onEdit={handlePokemonEdit}
+                                            />
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {paginatedPokemon.map((pokemon) => (
-                                            <div key={pokemon.id} className="bg-gray-50 rounded-xl p-6 flex items-center gap-6 hover:bg-gray-100 transition-colors">
+                                        {pokemon.map((poke) => (
+                                            <div key={poke.id} className="bg-gray-50 rounded-xl p-6 flex items-center gap-6 hover:bg-gray-100 transition-colors">
                                                 <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shadow-sm">
                                                     <img
-                                                        src={pokemon.imageUrl}
-                                                        alt={pokemon.name}
+                                                        src={poke.imageUrl || `https://via.placeholder.com/80x80/f3f4f6/9ca3af?text=${poke.name.charAt(0)}`}
+                                                        alt={poke.name}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-4 mb-2">
-                                                        <h3 className="text-xl font-bold capitalize">{pokemon.name}</h3>
-                                                        <span className="text-sm text-gray-500">#{pokemon.id.toString().padStart(3, '0')}</span>
+                                                        <h3 className="text-xl font-bold capitalize">{poke.name}</h3>
+                                                        <span className="text-sm text-gray-500">#{poke.id.toString().padStart(3, '0')}</span>
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        {pokemon.type.map((type) => (
-                                                            <span
-                                                                key={type}
-                                                                className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
-                                                                    type === 'Fire' ? 'bg-red-500' :
-                                                                        type === 'Water' ? 'bg-blue-500' :
-                                                                            type === 'Grass' ? 'bg-green-500' :
-                                                                                type === 'Electric' ? 'bg-yellow-500' :
-                                                                                    'bg-gray-500'
-                                                                }`}
-                                                            >
-                                                                {type}
-                                                            </span>
-                                                        ))}
+                                                    <div className="flex gap-2 mb-2">
+                                                        <span className="px-3 py-1 rounded-full text-xs font-medium text-white bg-blue-500 capitalize">
+                                                            {poke.type.toLowerCase()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex gap-4 text-sm text-gray-600">
+                                                        <span>{poke.height}m</span>
+                                                        <span>{poke.weight}kg</span>
+                                                        <span>{poke.abilities.length} abilities</span>
                                                     </div>
                                                 </div>
-                                                <Button variant="outline" size="sm">
-                                                    View Details
-                                                </Button>
+                                                <div className="flex gap-2">
+                                                    <Button variant="outline" size="sm" onClick={() => handlePokemonView(poke)}>
+                                                        View
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={() => handlePokemonEdit(poke)}>
+                                                        Edit
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
 
                                 {/* Pagination */}
-                                {calculatedTotalPages > 1 && (
+                                {totalPages > 1 && (
                                     <div className="flex items-center justify-center gap-2 pt-12 mt-12 border-t border-gray-100">
                                         <Button
                                             variant="outline"
@@ -263,14 +303,14 @@ export function HomePage() {
                                         </Button>
 
                                         <div className="flex items-center gap-2">
-                                            {Array.from({ length: Math.min(5, calculatedTotalPages) }, (_, i) => {
+                                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                                 let pageNum;
-                                                if (calculatedTotalPages <= 5) {
+                                                if (totalPages <= 5) {
                                                     pageNum = i + 1;
                                                 } else if (page <= 3) {
                                                     pageNum = i + 1;
-                                                } else if (page >= calculatedTotalPages - 2) {
-                                                    pageNum = calculatedTotalPages - 4 + i;
+                                                } else if (page >= totalPages - 2) {
+                                                    pageNum = totalPages - 4 + i;
                                                 } else {
                                                     pageNum = page - 2 + i;
                                                 }
@@ -297,7 +337,7 @@ export function HomePage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handlePageChange(page + 1)}
-                                            disabled={page >= calculatedTotalPages}
+                                            disabled={page >= totalPages}
                                             className="hover:bg-red-50 hover:border-red-200"
                                         >
                                             Next
@@ -307,7 +347,7 @@ export function HomePage() {
                                 )}
 
                                 <div className="text-center text-sm text-gray-500 pt-6">
-                                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, sortedPokemon.length)} of {sortedPokemon.length} results
+                                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} results
                                 </div>
                             </>
                         )}

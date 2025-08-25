@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { pokemonApi } from '@/lib/api';
+import { pokemonApi, abilitiesApi } from '@/lib/api';
 import { PokemonFilters, CreatePokemonData, UpdatePokemonData } from '@/types/pokemon';
 import { toast } from '@/hooks/use-toast';
 
@@ -19,6 +19,22 @@ export const usePokemon = (id: number) => {
     });
 };
 
+export const useAbilities = (ids?: number[]) => {
+    return useQuery({
+        queryKey: ['abilities', ids],
+        queryFn: () => abilitiesApi.getAbilities(ids),
+        staleTime: 10 * 60 * 1000, // 10 minutes
+    });
+};
+
+export const useAbility = (id: number) => {
+    return useQuery({
+        queryKey: ['ability', id],
+        queryFn: () => abilitiesApi.getAbility(id),
+        enabled: !!id,
+    });
+};
+
 export const useCreatePokemon = () => {
     const queryClient = useQueryClient();
 
@@ -26,6 +42,7 @@ export const useCreatePokemon = () => {
         mutationFn: (data: CreatePokemonData) => pokemonApi.createPokemon(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pokemon', 'list'] });
+            queryClient.invalidateQueries({ queryKey: ['abilities'] });
             toast({
                 title: "Success",
                 description: "Pokémon created successfully!",
@@ -49,6 +66,7 @@ export const useUpdatePokemon = () => {
         onSuccess: (updatedPokemon) => {
             queryClient.setQueryData(['pokemon', updatedPokemon.id], updatedPokemon);
             queryClient.invalidateQueries({ queryKey: ['pokemon', 'list'] });
+            queryClient.invalidateQueries({ queryKey: ['abilities'] });
             toast({
                 title: "Success",
                 description: "Pokémon updated successfully!",
@@ -69,7 +87,8 @@ export const useDeletePokemon = () => {
 
     return useMutation({
         mutationFn: (id: number) => pokemonApi.deletePokemon(id),
-        onSuccess: () => {
+        onSuccess: (_, deletedId) => {
+            queryClient.removeQueries({ queryKey: ['pokemon', deletedId] });
             queryClient.invalidateQueries({ queryKey: ['pokemon', 'list'] });
             toast({
                 title: "Success",

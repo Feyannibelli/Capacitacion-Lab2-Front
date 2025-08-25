@@ -1,4 +1,4 @@
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { usePokemon, useDeletePokemon } from '@/hooks/usePokemon';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
@@ -6,36 +6,39 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ChevronLeft, Edit, Trash2, Weight, Ruler, Zap, Swords, AlertCircle, Star, Heart } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronLeft, Edit, Trash2, Weight, Ruler, Zap, AlertCircle, Star, Heart } from 'lucide-react';
+import { Pokemon, PokemonType } from '@/types/pokemon';
 import { mockPokemon } from '@/lib/api';
 
-const typeColors: Record<string, { bg: string; gradient: string; light: string }> = {
-    Fire: { bg: 'bg-red-500', gradient: 'from-red-400 to-red-600', light: 'bg-red-50' },
-    Water: { bg: 'bg-blue-500', gradient: 'from-blue-400 to-blue-600', light: 'bg-blue-50' },
-    Grass: { bg: 'bg-green-500', gradient: 'from-green-400 to-green-600', light: 'bg-green-50' },
-    Electric: { bg: 'bg-yellow-500', gradient: 'from-yellow-400 to-yellow-600', light: 'bg-yellow-50' },
-    Psychic: { bg: 'bg-purple-500', gradient: 'from-purple-400 to-purple-600', light: 'bg-purple-50' },
-    Ice: { bg: 'bg-cyan-400', gradient: 'from-cyan-300 to-cyan-500', light: 'bg-cyan-50' },
-    Dragon: { bg: 'bg-indigo-600', gradient: 'from-indigo-500 to-indigo-700', light: 'bg-indigo-50' },
-    Dark: { bg: 'bg-gray-700', gradient: 'from-gray-600 to-gray-800', light: 'bg-gray-50' },
-    Fairy: { bg: 'bg-pink-400', gradient: 'from-pink-300 to-pink-500', light: 'bg-pink-50' },
-    Fighting: { bg: 'bg-red-700', gradient: 'from-red-600 to-red-800', light: 'bg-red-50' },
-    Poison: { bg: 'bg-purple-600', gradient: 'from-purple-500 to-purple-700', light: 'bg-purple-50' },
-    Ground: { bg: 'bg-yellow-600', gradient: 'from-yellow-500 to-yellow-700', light: 'bg-yellow-50' },
-    Flying: { bg: 'bg-indigo-400', gradient: 'from-indigo-300 to-indigo-500', light: 'bg-indigo-50' },
-    Bug: { bg: 'bg-green-600', gradient: 'from-green-500 to-green-700', light: 'bg-green-50' },
-    Rock: { bg: 'bg-yellow-800', gradient: 'from-yellow-700 to-yellow-900', light: 'bg-yellow-50' },
-    Ghost: { bg: 'bg-purple-800', gradient: 'from-purple-700 to-purple-900', light: 'bg-purple-50' },
-    Steel: { bg: 'bg-gray-500', gradient: 'from-gray-400 to-gray-600', light: 'bg-gray-50' },
-    Normal: { bg: 'bg-gray-400', gradient: 'from-gray-300 to-gray-500', light: 'bg-gray-50' },
+interface PokemonDetailPageProps {
+    pokemonId: number;
+    onNavigateBack?: () => void;
+    onNavigateToEdit?: (pokemon: Pokemon) => void;
+    onNavigateHome?: () => void;
+}
+
+const typeColors: Record<PokemonType, { bg: string; gradient: string; light: string }> = {
+    [PokemonType.FIRE]: { bg: 'bg-red-500', gradient: 'from-red-400 to-red-600', light: 'bg-red-50' },
+    [PokemonType.WATER]: { bg: 'bg-blue-500', gradient: 'from-blue-400 to-blue-600', light: 'bg-blue-50' },
+    [PokemonType.GRASS]: { bg: 'bg-green-500', gradient: 'from-green-400 to-green-600', light: 'bg-green-50' },
+    [PokemonType.ELECTRIC]: { bg: 'bg-yellow-500', gradient: 'from-yellow-400 to-yellow-600', light: 'bg-yellow-50' },
+    [PokemonType.PSYCHIC]: { bg: 'bg-purple-500', gradient: 'from-purple-400 to-purple-600', light: 'bg-purple-50' },
+    [PokemonType.ICE]: { bg: 'bg-cyan-400', gradient: 'from-cyan-300 to-cyan-500', light: 'bg-cyan-50' },
+    [PokemonType.DRAGON]: { bg: 'bg-indigo-600', gradient: 'from-indigo-500 to-indigo-700', light: 'bg-indigo-50' },
+    [PokemonType.DARK]: { bg: 'bg-gray-700', gradient: 'from-gray-600 to-gray-800', light: 'bg-gray-50' },
+    [PokemonType.FAIRY]: { bg: 'bg-pink-400', gradient: 'from-pink-300 to-pink-500', light: 'bg-pink-50' },
+    [PokemonType.FIGHTING]: { bg: 'bg-red-700', gradient: 'from-red-600 to-red-800', light: 'bg-red-50' },
+    [PokemonType.POISON]: { bg: 'bg-purple-600', gradient: 'from-purple-500 to-purple-700', light: 'bg-purple-50' },
+    [PokemonType.GROUND]: { bg: 'bg-yellow-600', gradient: 'from-yellow-500 to-yellow-700', light: 'bg-yellow-50' },
+    [PokemonType.FLYING]: { bg: 'bg-indigo-400', gradient: 'from-indigo-300 to-indigo-500', light: 'bg-indigo-50' },
+    [PokemonType.BUG]: { bg: 'bg-green-600', gradient: 'from-green-500 to-green-700', light: 'bg-green-50' },
+    [PokemonType.ROCK]: { bg: 'bg-yellow-800', gradient: 'from-yellow-700 to-yellow-900', light: 'bg-yellow-50' },
+    [PokemonType.GHOST]: { bg: 'bg-purple-800', gradient: 'from-purple-700 to-purple-900', light: 'bg-purple-50' },
+    [PokemonType.STEEL]: { bg: 'bg-gray-500', gradient: 'from-gray-400 to-gray-600', light: 'bg-gray-50' },
+    [PokemonType.NORMAL]: { bg: 'bg-gray-400', gradient: 'from-gray-300 to-gray-500', light: 'bg-gray-50' },
 };
 
-export function PokemonDetailPage() {
-    const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
-    const pokemonId = parseInt(id!, 10);
-
+export function PokemonDetailPage({ pokemonId, onNavigateBack, onNavigateToEdit, onNavigateHome }: PokemonDetailPageProps) {
     const { data: pokemon, isLoading, error } = usePokemon(pokemonId);
     const deleteMutation = useDeletePokemon();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -46,7 +49,7 @@ export function PokemonDetailPage() {
     const handleDelete = async () => {
         deleteMutation.mutate(pokemonId, {
             onSuccess: () => {
-                navigate('/', { replace: true });
+                onNavigateHome?.();
             },
         });
         setDeleteDialogOpen(false);
@@ -72,7 +75,7 @@ export function PokemonDetailPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate('/')}
+                                onClick={onNavigateBack}
                                 className="flex items-center gap-2"
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -101,7 +104,7 @@ export function PokemonDetailPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate('/')}
+                                onClick={onNavigateBack}
                                 className="flex items-center gap-2"
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -112,7 +115,7 @@ export function PokemonDetailPage() {
                         <div className="text-center py-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Pokémon not found</h2>
                             <p className="text-gray-600 mb-4">The Pokémon you're looking for doesn't exist.</p>
-                            <Button onClick={() => navigate('/')}>Back to Pokédex</Button>
+                            <Button onClick={onNavigateHome}>Back to Pokédex</Button>
                         </div>
                     </div>
                 </div>
@@ -120,8 +123,7 @@ export function PokemonDetailPage() {
         );
     }
 
-    const primaryType = pokemonData.type[0];
-    const typeConfig = typeColors[primaryType] || typeColors.Normal;
+    const typeConfig = typeColors[pokemonData.type] || typeColors[PokemonType.NORMAL];
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -131,7 +133,7 @@ export function PokemonDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate('/')}
+                        onClick={onNavigateBack}
                         className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
                     >
                         <ChevronLeft className="w-4 h-4" />
@@ -151,11 +153,22 @@ export function PokemonDetailPage() {
                             {/* Pokemon Image */}
                             <div className="relative">
                                 <div className="w-80 h-80 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20 overflow-hidden shadow-2xl">
-                                    <img
-                                        src={pokemonData.imageUrl}
-                                        alt={pokemonData.name}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {pokemonData.imageUrl ? (
+                                        <img
+                                            src={pokemonData.imageUrl}
+                                            alt={pokemonData.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = `https://via.placeholder.com/320x320/f3f4f6/9ca3af?text=${pokemonData.name.charAt(0).toUpperCase()}`;
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <span className="text-9xl font-bold text-white/50">
+                                                {pokemonData.name.charAt(0).toUpperCase()}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="absolute -top-4 -right-4 flex gap-2">
                                     <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
@@ -180,14 +193,11 @@ export function PokemonDetailPage() {
                                 </h1>
 
                                 <div className="flex flex-wrap gap-3 justify-center lg:justify-start mb-8">
-                                    {pokemonData.type.map((type) => (
-                                        <Badge
-                                            key={type}
-                                            className="bg-white/20 text-white border-white/30 hover:bg-white/30 font-medium text-lg px-4 py-2"
-                                        >
-                                            {type}
-                                        </Badge>
-                                    ))}
+                                    <Badge
+                                        className="bg-white/20 text-white border-white/30 hover:bg-white/30 font-medium text-lg px-4 py-2 capitalize"
+                                    >
+                                        {pokemonData.type.toLowerCase()}
+                                    </Badge>
                                 </div>
 
                                 {/* Quick Stats */}
@@ -210,11 +220,13 @@ export function PokemonDetailPage() {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-4 justify-center lg:justify-start mt-8">
-                                    <Button asChild size="lg" className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
-                                        <Link to={`/pokemon/${pokemonData.id}/edit`}>
-                                            <Edit className="w-5 h-5 mr-2" />
-                                            Edit Pokémon
-                                        </Link>
+                                    <Button
+                                        size="lg"
+                                        className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                                        onClick={() => onNavigateToEdit?.(pokemonData)}
+                                    >
+                                        <Edit className="w-5 h-5 mr-2" />
+                                        Edit Pokémon
                                     </Button>
 
                                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -250,7 +262,7 @@ export function PokemonDetailPage() {
 
                     {/* Details Section */}
                     <div className="p-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
                             {/* Abilities */}
                             <Card className="border-0 shadow-lg">
                                 <CardHeader className={`${typeConfig.light} border-b`}>
@@ -258,69 +270,46 @@ export function PokemonDetailPage() {
                                         <div className={`p-2 ${typeConfig.bg} rounded-lg`}>
                                             <Zap className="w-5 h-5 text-white" />
                                         </div>
-                                        Abilities
+                                        Abilities ({pokemonData.abilities.length})
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6">
                                     <div className="grid gap-3">
-                                        {pokemonData.abilities.map((ability, index) => (
-                                            <div key={ability} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                        {pokemonData.abilities.map((pokemonAbility, index) => (
+                                            <div key={pokemonAbility.ability.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                                 <div className={`w-8 h-8 ${typeConfig.bg} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
                                                     {index + 1}
                                                 </div>
-                                                <span className="font-medium text-gray-800">{ability}</span>
+                                                <span className="font-medium text-gray-800">{pokemonAbility.ability.name}</span>
                                             </div>
                                         ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Moves */}
-                            <Card className="border-0 shadow-lg">
-                                <CardHeader className={`${typeConfig.light} border-b`}>
-                                    <CardTitle className="flex items-center gap-3 text-xl">
-                                        <div className={`p-2 ${typeConfig.bg} rounded-lg`}>
-                                            <Swords className="w-5 h-5 text-white" />
-                                        </div>
-                                        Moves
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {pokemonData.moves.map((move, index) => (
-                                            <div key={move} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                                <div className={`w-6 h-6 ${typeConfig.bg} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
-                                                    {index + 1}
-                                                </div>
-                                                <span className="font-medium text-gray-800 text-sm">{move}</span>
-                                            </div>
-                                        ))}
+                                        {pokemonData.abilities.length === 0 && (
+                                            <p className="text-gray-500 text-center py-4">No abilities assigned to this Pokémon</p>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
 
                         {/* Metadata */}
-                        {pokemonData.createdAt && (
-                            <Card className="mt-8 border-0 shadow-lg">
-                                <CardContent className="p-6">
-                                    <div className="text-center text-gray-500">
-                                        <div className="flex items-center justify-center gap-8">
-                                            <div>
-                                                <span className="font-medium">Created:</span>
-                                                <span className="ml-2">{new Date(pokemonData.createdAt).toLocaleDateString()}</span>
-                                            </div>
-                                            {pokemonData.updatedAt && pokemonData.updatedAt !== pokemonData.createdAt && (
-                                                <div>
-                                                    <span className="font-medium">Updated:</span>
-                                                    <span className="ml-2">{new Date(pokemonData.updatedAt).toLocaleDateString()}</span>
-                                                </div>
-                                            )}
+                        <Card className="mt-8 border-0 shadow-lg">
+                            <CardContent className="p-6">
+                                <div className="text-center text-gray-500">
+                                    <div className="flex items-center justify-center gap-8">
+                                        <div>
+                                            <span className="font-medium">Created:</span>
+                                            <span className="ml-2">{new Date(pokemonData.createdAt).toLocaleDateString()}</span>
                                         </div>
+                                        {pokemonData.updatedAt && pokemonData.updatedAt !== pokemonData.createdAt && (
+                                            <div>
+                                                <span className="font-medium">Updated:</span>
+                                                <span className="ml-2">{new Date(pokemonData.updatedAt).toLocaleDateString()}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>
