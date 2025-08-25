@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ChevronLeft, Edit, Trash2, Weight, Ruler, Zap, AlertCircle, Star, Heart } from 'lucide-react';
-import { Pokemon, PokemonType } from '@/types/pokemon';
+import { PokemonType } from '@/types/pokemon';
 
 const typeColors: Record<PokemonType, { bg: string; gradient: string; light: string }> = {
     [PokemonType.FIRE]: { bg: 'bg-red-500', gradient: 'from-red-400 to-red-600', light: 'bg-red-50' },

@@ -1,4 +1,4 @@
-import { Pokemon, PokemonListResponse, CreatePokemonData, UpdatePokemonData, PokemonFilters, PokemonType, Ability } from '@/types/pokemon';
+import { Pokemon, PokemonListResponse, PokemonFilters, Ability } from '@/types/pokemon';
 
 const API_BASE_URL = 'http://localhost:3000';
 const API_KEY = 'vsdijbnON1@onacvásc';
