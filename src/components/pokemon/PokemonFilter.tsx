@@ -1,9 +1,8 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, X, Plus } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { PokemonType } from '@/types/pokemon';
-import { Link } from 'react-router-dom';
 
 interface PokemonFiltersProps {
     search: string;
@@ -16,7 +15,7 @@ const pokemonTypes = Object.values(PokemonType);
 
 export function PokemonFilters({ search, type, onSearchChange, onTypeChange }: PokemonFiltersProps) {
     return (
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
                 <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -64,11 +63,6 @@ export function PokemonFilters({ search, type, onSearchChange, onTypeChange }: P
                     </Button>
                 )}
             </div>
-
-            <Button className="bg-red-600 hover:bg-red-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Pokémon
-            </Button>
         </div>
     );
 }

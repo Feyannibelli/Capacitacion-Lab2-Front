@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePokemonList } from '@/hooks/usePokemon';
 import { PokemonCard } from '@/components/pokemon/PokemonCard';
 import { PokemonFilters } from '@/components/pokemon/PokemonFilter';
@@ -7,15 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ChevronLeft, ChevronRight, AlertCircle, Grid, List } from 'lucide-react';
 import { Pokemon, PokemonType } from '@/types/pokemon';
-import { mockPokemon } from '@/lib/api';
+import { useSearchParams } from 'react-router-dom';
 
 export function HomePage() {
-    const [search, setSearch] = useState('');
-    const [type, setType] = useState('');
-    const [page, setPage] = useState(1);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [sortBy, setSortBy] = useState<'id' | 'name' | 'type'>('id');
-    const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Get filters from URL parameters
+    const [search, setSearch] = useState(searchParams.get('search') || '');
+    const [type, setType] = useState(searchParams.get('type') || '');
+    const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>((searchParams.get('view') as 'grid' | 'list') || 'grid');
+    const [sortBy, setSortBy] = useState<'id' | 'name' | 'type'>((searchParams.get('sortBy') as 'id' | 'name' | 'type') || 'id');
+    const [order, setOrder] = useState<'asc' | 'desc'>((searchParams.get('order') as 'asc' | 'desc') || 'asc');
     const limit = 12;
 
     const {
@@ -36,19 +41,58 @@ export function HomePage() {
     const totalPages = data?.totalPages || 1;
     const total = data?.total || 0;
 
+    // Update URL parameters when filters change
+    const updateSearchParams = (updates: Record<string, string | null>) => {
+        const newParams = new URLSearchParams(searchParams);
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value) {
+                newParams.set(key, value);
+            } else {
+                newParams.delete(key);
+            }
+        });
+        setSearchParams(newParams);
+    };
+
+    const handleSearchChange = (newSearch: string) => {
+        setSearch(newSearch);
+        setPage(1);
+        updateSearchParams({ search: newSearch || null, page: '1' });
+    };
+
+    const handleTypeChange = (newType: string) => {
+        setType(newType);
+        setPage(1);
+        updateSearchParams({ type: newType || null, page: '1' });
+    };
+
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
+        updateSearchParams({ page: newPage.toString() });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handleSortChange = (newSortBy: 'id' | 'name' | 'type') => {
+        setSortBy(newSortBy);
+        updateSearchParams({ sortBy: newSortBy });
+    };
+
+    const handleOrderChange = (newOrder: 'asc' | 'desc') => {
+        setOrder(newOrder);
+        updateSearchParams({ order: newOrder });
+    };
+
+    const handleViewModeChange = (newViewMode: 'grid' | 'list') => {
+        setViewMode(newViewMode);
+        updateSearchParams({ view: newViewMode });
+    };
+
     const handlePokemonView = (pokemon: Pokemon) => {
-        // In a real app, this would navigate to detail page
-        console.log('View pokemon:', pokemon);
+        navigate(`/pokemon/${pokemon.id}`);
     };
 
     const handlePokemonEdit = (pokemon: Pokemon) => {
-        // In a real app, this would navigate to edit page
-        console.log('Edit pokemon:', pokemon);
+        navigate(`/pokemon/${pokemon.id}/edit`);
     };
 
     if (isLoading) {
@@ -81,20 +125,10 @@ export function HomePage() {
                             <Alert variant="destructive" className="mb-6">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertDescription>
-                                    Failed to load Pokémon data. Using demo data instead.
+                                    Failed to load Pokémon data. Please check your internet connection and try again.
                                     {error instanceof Error && ` Error: ${error.message}`}
                                 </AlertDescription>
                             </Alert>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {mockPokemon.map((pokemon) => (
-                                    <PokemonCard
-                                        key={pokemon.id}
-                                        pokemon={pokemon}
-                                        onView={handlePokemonView}
-                                        onEdit={handlePokemonEdit}
-                                    />
-                                ))}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,7 +162,7 @@ export function HomePage() {
                                     <span className="text-red-100 text-sm">Sort by:</span>
                                     <div className="flex rounded-lg bg-white/10 p-1">
                                         <button
-                                            onClick={() => setSortBy('id')}
+                                            onClick={() => handleSortChange('id')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                                 sortBy === 'id'
                                                     ? 'bg-white text-red-600'
@@ -138,7 +172,7 @@ export function HomePage() {
                                             Number
                                         </button>
                                         <button
-                                            onClick={() => setSortBy('name')}
+                                            onClick={() => handleSortChange('name')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                                 sortBy === 'name'
                                                     ? 'bg-white text-red-600'
@@ -148,7 +182,7 @@ export function HomePage() {
                                             Name
                                         </button>
                                         <button
-                                            onClick={() => setSortBy('type')}
+                                            onClick={() => handleSortChange('type')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                                 sortBy === 'type'
                                                     ? 'bg-white text-red-600'
@@ -163,7 +197,7 @@ export function HomePage() {
                                 {/* Order Controls */}
                                 <div className="flex rounded-lg bg-white/10 p-1">
                                     <button
-                                        onClick={() => setOrder('asc')}
+                                        onClick={() => handleOrderChange('asc')}
                                         className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                             order === 'asc'
                                                 ? 'bg-white text-red-600'
@@ -173,7 +207,7 @@ export function HomePage() {
                                         ↑ ASC
                                     </button>
                                     <button
-                                        onClick={() => setOrder('desc')}
+                                        onClick={() => handleOrderChange('desc')}
                                         className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                             order === 'desc'
                                                 ? 'bg-white text-red-600'
@@ -187,7 +221,7 @@ export function HomePage() {
                                 {/* View Mode Toggle */}
                                 <div className="flex rounded-lg bg-white/10 p-1">
                                     <button
-                                        onClick={() => setViewMode('grid')}
+                                        onClick={() => handleViewModeChange('grid')}
                                         className={`p-2 rounded transition-colors ${
                                             viewMode === 'grid'
                                                 ? 'bg-white text-red-600'
@@ -197,7 +231,7 @@ export function HomePage() {
                                         <Grid className="w-4 h-4" />
                                     </button>
                                     <button
-                                        onClick={() => setViewMode('list')}
+                                        onClick={() => handleViewModeChange('list')}
                                         className={`p-2 rounded transition-colors ${
                                             viewMode === 'list'
                                                 ? 'bg-white text-red-600'
@@ -216,8 +250,8 @@ export function HomePage() {
                         <PokemonFilters
                             search={search}
                             type={type}
-                            onSearchChange={setSearch}
-                            onTypeChange={setType}
+                            onSearchChange={handleSearchChange}
+                            onTypeChange={handleTypeChange}
                         />
                     </div>
 

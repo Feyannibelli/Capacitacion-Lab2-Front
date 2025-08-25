@@ -66,18 +66,36 @@ export const pokemonApi = {
     },
 
     // Create new pokemon
-    createPokemon: async (data: CreatePokemonData): Promise<Pokemon> => {
+    createPokemon: async (data: Partial<Pokemon>): Promise<Pokemon> => {
+        // Transform data to match backend format
+        const createData = {
+            name: data.name,
+            type: data.type,
+            height: data.height,
+            weight: data.weight,
+            imageUrl: data.imageUrl || undefined,
+            abilities: data.abilities || [],
+        };
+
         const response = await fetch(`${API_BASE_URL}/pokemons`, {
             method: 'POST',
             headers: getHeaders(true),
-            body: JSON.stringify(data),
+            body: JSON.stringify(createData),
         });
         return handleResponse<Pokemon>(response);
     },
 
     // Update existing pokemon
-    updatePokemon: async (data: UpdatePokemonData): Promise<Pokemon> => {
-        const { id, ...updateData } = data;
+    updatePokemon: async ({ id, data }: { id: number; data: Partial<Pokemon> }): Promise<Pokemon> => {
+        // Transform data to match backend format
+        const updateData: any = {};
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.type !== undefined) updateData.type = data.type;
+        if (data.height !== undefined) updateData.height = data.height;
+        if (data.weight !== undefined) updateData.weight = data.weight;
+        if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || undefined;
+        if (data.abilities !== undefined) updateData.abilities = data.abilities;
+
         const response = await fetch(`${API_BASE_URL}/pokemons/${id}`, {
             method: 'PATCH',
             headers: getHeaders(true),
@@ -128,49 +146,3 @@ export const abilitiesApi = {
         return handleResponse<Ability>(response);
     },
 };
-
-// Mock data for development/fallback
-export const mockPokemon: Pokemon[] = [
-    {
-        id: 1,
-        name: "Pikachu",
-        type: PokemonType.ELECTRIC,
-        height: 0.4,
-        weight: 6.0,
-        imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
-        abilities: [
-            { ability: { id: 1, name: "Static" } },
-            { ability: { id: 2, name: "Lightning Rod" } }
-        ],
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-    },
-    {
-        id: 2,
-        name: "Charizard",
-        type: PokemonType.FIRE,
-        height: 1.7,
-        weight: 90.5,
-        imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
-        abilities: [
-            { ability: { id: 3, name: "Blaze" } },
-            { ability: { id: 4, name: "Solar Power" } }
-        ],
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-    },
-    {
-        id: 3,
-        name: "Blastoise",
-        type: PokemonType.WATER,
-        height: 1.6,
-        weight: 85.5,
-        imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
-        abilities: [
-            { ability: { id: 5, name: "Torrent" } },
-            { ability: { id: 6, name: "Rain Dish" } }
-        ],
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-    }
-];

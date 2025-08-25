@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pokemonApi, abilitiesApi } from '@/lib/api';
-import { PokemonFilters, CreatePokemonData, UpdatePokemonData } from '@/types/pokemon';
+import { PokemonFilters, Pokemon } from '@/types/pokemon';
 import { toast } from '@/hooks/use-toast';
 
 export const usePokemonList = (filters: PokemonFilters) => {
@@ -8,6 +8,7 @@ export const usePokemonList = (filters: PokemonFilters) => {
         queryKey: ['pokemon', 'list', filters],
         queryFn: () => pokemonApi.getPokemons(filters),
         placeholderData: (previousData) => previousData,
+        staleTime: 30 * 1000, // 30 seconds
     });
 };
 
@@ -16,6 +17,7 @@ export const usePokemon = (id: number) => {
         queryKey: ['pokemon', id],
         queryFn: () => pokemonApi.getPokemon(id),
         enabled: !!id,
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 };
 
@@ -32,6 +34,7 @@ export const useAbility = (id: number) => {
         queryKey: ['ability', id],
         queryFn: () => abilitiesApi.getAbility(id),
         enabled: !!id,
+        staleTime: 10 * 60 * 1000, // 10 minutes
     });
 };
 
@@ -39,13 +42,20 @@ export const useCreatePokemon = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: CreatePokemonData) => pokemonApi.createPokemon(data),
-        onSuccess: () => {
+        mutationFn: (data: Partial<Pokemon>) => pokemonApi.createPokemon(data),
+        onSuccess: (newPokemon) => {
+            // Invalidate and refetch pokemon list
             queryClient.invalidateQueries({ queryKey: ['pokemon', 'list'] });
+
+            // Add the new pokemon to cache
+            queryClient.setQueryData(['pokemon', newPokemon.id], newPokemon);
+
+            // Invalidate abilities as new ones might have been created
             queryClient.invalidateQueries({ queryKey: ['abilities'] });
+
             toast({
                 title: "Success",
-                description: "Pokémon created successfully!",
+                description: `${newPokemon.name} has been created successfully!`,
             });
         },
         onError: (error: any) => {
@@ -62,14 +72,21 @@ export const useUpdatePokemon = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: UpdatePokemonData) => pokemonApi.updatePokemon(data),
+        mutationFn: ({ id, data }: { id: number; data: Partial<Pokemon> }) =>
+            pokemonApi.updatePokemon({ id, data }),
         onSuccess: (updatedPokemon) => {
+            // Update the specific pokemon in cache
             queryClient.setQueryData(['pokemon', updatedPokemon.id], updatedPokemon);
+
+            // Invalidate pokemon list to ensure consistency
             queryClient.invalidateQueries({ queryKey: ['pokemon', 'list'] });
+
+            // Invalidate abilities as they might have changed
             queryClient.invalidateQueries({ queryKey: ['abilities'] });
+
             toast({
                 title: "Success",
-                description: "Pokémon updated successfully!",
+                description: `${updatedPokemon.name} has been updated successfully!`,
             });
         },
         onError: (error: any) => {
@@ -88,11 +105,15 @@ export const useDeletePokemon = () => {
     return useMutation({
         mutationFn: (id: number) => pokemonApi.deletePokemon(id),
         onSuccess: (_, deletedId) => {
+            // Remove the pokemon from cache
             queryClient.removeQueries({ queryKey: ['pokemon', deletedId] });
+
+            // Invalidate pokemon list
             queryClient.invalidateQueries({ queryKey: ['pokemon', 'list'] });
+
             toast({
                 title: "Success",
-                description: "Pokémon deleted successfully!",
+                description: "Pokémon has been deleted successfully!",
             });
         },
         onError: (error: any) => {
