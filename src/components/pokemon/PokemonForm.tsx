@@ -199,7 +199,7 @@ export function PokemonForm({
                             </Label>
                             <Select
                                 value={formData.type}
-                                onValueChange={(value) => handleChange('type', value)}
+                                onValueChange={(value: string) => handleChange('type', value)}
                             >
                                 <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
                                     <SelectValue placeholder="Select a type" />

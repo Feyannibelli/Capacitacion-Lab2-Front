@@ -61,9 +61,9 @@ export function HomePage() {
     };
 
     const handleTypeChange = (newType: string) => {
-        setType(newType);
+        setType(newType === 'all' ? '' : newType);
         setPage(1);
-        updateSearchParams({ type: newType || null, page: '1' });
+        updateSearchParams({ type: newType === 'all' ? null : newType, page: '1' });
     };
 
     const handlePageChange = (newPage: number) => {

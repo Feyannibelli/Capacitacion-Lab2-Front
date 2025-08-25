@@ -54,7 +54,7 @@ export function PokemonFilters({
                         <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All types</SelectItem>
+                        <SelectItem value="all">All types</SelectItem>
                         {pokemonTypes.map(pokemonType => (
                             <SelectItem key={pokemonType} value={pokemonType}>
                                 {pokemonType.toLowerCase()}
