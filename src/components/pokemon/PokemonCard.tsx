@@ -2,7 +2,7 @@ import { Pokemon, PokemonType } from '@/types/pokemon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Eye, Edit, Weight, Ruler } from 'lucide-react';
+import { Edit, Weight, Ruler } from 'lucide-react';
 
 interface PokemonCardProps {
     pokemon: Pokemon;
@@ -35,7 +35,10 @@ export function PokemonCard({ pokemon, onView, onEdit }: PokemonCardProps) {
     const typeColor = typeColors[pokemon.type] || typeColors[PokemonType.NORMAL];
 
     return (
-        <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white">
+        <Card 
+            className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white cursor-pointer"
+            onClick={() => onView(pokemon)}
+        >
             <CardContent className="p-0">
                 {/* Image Section */}
                 <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-br from-gray-50 to-gray-100">
@@ -115,21 +118,15 @@ export function PokemonCard({ pokemon, onView, onEdit }: PokemonCardProps) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex justify-center">
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => onView(pokemon)}
-                            className="flex-1"
-                        >
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onEdit(pokemon)}
-                            className="flex-1"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(pokemon);
+                            }}
+                            className="w-full"
                         >
                             <Edit className="w-4 h-4 mr-2" />
                             Edit

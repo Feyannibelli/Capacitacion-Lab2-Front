@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ChevronLeft, Edit, Trash2, Weight, Ruler, Zap, AlertCircle, Star, Heart } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, Weight, Ruler, Zap, AlertCircle } from 'lucide-react';
 import { PokemonType } from '@/types/pokemon';
 
 const typeColors: Record<PokemonType, { bg: string; gradient: string; light: string }> = {
@@ -149,14 +149,6 @@ export function PokemonDetailPage() {
                                             </span>
                                         </div>
                                     )}
-                                </div>
-                                <div className="absolute -top-4 -right-4 flex gap-2">
-                                    <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
-                                        <Star className="w-6 h-6 text-yellow-800" fill="currentColor" />
-                                    </div>
-                                    <div className="w-12 h-12 bg-red-400 rounded-full flex items-center justify-center shadow-lg">
-                                        <Heart className="w-6 h-6 text-red-800" fill="currentColor" />
-                                    </div>
                                 </div>
                             </div>
 
