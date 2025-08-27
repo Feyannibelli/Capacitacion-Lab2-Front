@@ -1,4 +1,3 @@
-import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -81,7 +80,6 @@ export function PokemonFilters({
                                     <div className={`w-3 h-3 rounded-full ${typeColors[pokemonType]}`}></div>
                                     <span className="capitalize">{pokemonType.toLowerCase()}</span>
                                 </div>
-                                {pokemonType.toLowerCase()}
                             </SelectItem>
                         ))}
                     </SelectContent>
