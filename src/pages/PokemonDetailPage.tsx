@@ -208,7 +208,7 @@ export function PokemonDetailPage() {
                                             <Button
                                                 size="lg"
                                                 variant="outline"
-                                                className="border-white/30 text-white hover:bg-red-600 hover:text-white hover:border-red-600 font-semibold"
+                                                className="border-white/30 text-black hover:bg-red-600 hover:text-white hover:border-red-600 font-semibold"
                                             >
                                                 <Trash2 className="w-5 h-5 mr-2" />
                                                 Delete
