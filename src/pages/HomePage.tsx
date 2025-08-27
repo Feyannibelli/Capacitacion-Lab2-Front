@@ -91,10 +91,6 @@ export function HomePage() {
         navigate(`/pokemon/${pokemon.id}`);
     };
 
-    const handlePokemonEdit = (pokemon: Pokemon) => {
-        navigate(`/pokemon/${pokemon.id}/edit`);
-    };
-
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -161,7 +157,7 @@ export function HomePage() {
                                 <div className="flex items-center gap-2">
                                     <span className="text-red-100 text-sm">Sort by:</span>
                                     <div className="flex rounded-lg bg-white/10 p-1">
-                                        <button
+                                        <Button
                                             onClick={() => handleSortChange('id')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                                 sortBy === 'id'
@@ -170,7 +166,7 @@ export function HomePage() {
                                             }`}
                                         >
                                             Number
-                                        </button>
+                                        </Button>
                                         <button
                                             onClick={() => handleSortChange('name')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
@@ -301,11 +297,6 @@ export function HomePage() {
                                                         <span className="px-3 py-1 rounded-full text-xs font-medium text-white bg-blue-500 capitalize">
                                                             {poke.type.toLowerCase()}
                                                         </span>
-                                                    </div>
-                                                    <div className="flex gap-4 text-sm text-gray-600">
-                                                        <span>{poke.height}m</span>
-                                                        <span>{poke.weight}kg</span>
-                                                        <span>{poke.abilities.length} abilities</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
