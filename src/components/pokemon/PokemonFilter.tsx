@@ -14,6 +14,26 @@ interface PokemonFiltersProps {
 
 const pokemonTypes = Object.values(PokemonType);
 
+const typeColors: Record<PokemonType, string> = {
+    [PokemonType.FIRE]: 'bg-red-500 text-white',
+    [PokemonType.WATER]: 'bg-blue-500 text-white',
+    [PokemonType.GRASS]: 'bg-green-500 text-white',
+    [PokemonType.ELECTRIC]: 'bg-yellow-500 text-black',
+    [PokemonType.PSYCHIC]: 'bg-purple-500 text-white',
+    [PokemonType.ICE]: 'bg-cyan-400 text-black',
+    [PokemonType.DRAGON]: 'bg-indigo-600 text-white',
+    [PokemonType.DARK]: 'bg-gray-700 text-white',
+    [PokemonType.FAIRY]: 'bg-pink-400 text-black',
+    [PokemonType.FIGHTING]: 'bg-red-700 text-white',
+    [PokemonType.POISON]: 'bg-purple-600 text-white',
+    [PokemonType.GROUND]: 'bg-yellow-600 text-white',
+    [PokemonType.FLYING]: 'bg-indigo-400 text-white',
+    [PokemonType.BUG]: 'bg-green-600 text-white',
+    [PokemonType.ROCK]: 'bg-yellow-800 text-white',
+    [PokemonType.GHOST]: 'bg-purple-800 text-white',
+    [PokemonType.STEEL]: 'bg-gray-500 text-white',
+    [PokemonType.NORMAL]: 'bg-gray-400 text-white',
+};
 export function PokemonFilters({
                                    search,
                                    type,
@@ -57,6 +77,10 @@ export function PokemonFilters({
                         <SelectItem value="all">All types</SelectItem>
                         {pokemonTypes.map(pokemonType => (
                             <SelectItem key={pokemonType} value={pokemonType}>
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${typeColors[pokemonType]}`}></div>
+                                    <span className="capitalize">{pokemonType.toLowerCase()}</span>
+                                </div>
                                 {pokemonType.toLowerCase()}
                             </SelectItem>
                         ))}

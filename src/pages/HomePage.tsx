@@ -278,7 +278,6 @@ export function HomePage() {
                                                 key={poke.id}
                                                 pokemon={poke}
                                                 onView={handlePokemonView}
-                                                onEdit={handlePokemonEdit}
                                             />
                                         ))}
                                     </div>
@@ -312,9 +311,6 @@ export function HomePage() {
                                                 <div className="flex gap-2">
                                                     <Button variant="outline" size="sm" onClick={() => handlePokemonView(poke)}>
                                                         View
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" onClick={() => handlePokemonEdit(poke)}>
-                                                        Edit
                                                     </Button>
                                                 </div>
                                             </div>

@@ -1,13 +1,10 @@
 import { Pokemon, PokemonType } from '@/types/pokemon';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Edit, Weight, Ruler } from 'lucide-react';
 
 interface PokemonCardProps {
     pokemon: Pokemon;
     onView: (pokemon: Pokemon) => void;
-    onEdit: (pokemon: Pokemon) => void;
 }
 
 const typeColors: Record<PokemonType, string> = {
@@ -31,7 +28,7 @@ const typeColors: Record<PokemonType, string> = {
     [PokemonType.NORMAL]: 'bg-gray-400',
 };
 
-export function PokemonCard({ pokemon, onView, onEdit }: PokemonCardProps) {
+export function PokemonCard({ pokemon, onView }: PokemonCardProps) {
     const typeColor = typeColors[pokemon.type] || typeColors[PokemonType.NORMAL];
 
     return (
@@ -42,7 +39,7 @@ export function PokemonCard({ pokemon, onView, onEdit }: PokemonCardProps) {
             <CardContent className="p-0">
                 {/* Image Section */}
                 <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                    <div className="aspect-square p-6 flex items-center justify-center">
+                    <div className="aspect-square p-4 flex items-center justify-center">
                         {pokemon.imageUrl ? (
                             <img
                                 src={pokemon.imageUrl}
@@ -54,7 +51,7 @@ export function PokemonCard({ pokemon, onView, onEdit }: PokemonCardProps) {
                             />
                         ) : (
                             <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                                <span className="text-6xl font-bold text-gray-400">
+                                <span className="text-4xl font-bold text-gray-400">
                                     {pokemon.name.charAt(0).toUpperCase()}
                                 </span>
                             </div>
@@ -70,67 +67,15 @@ export function PokemonCard({ pokemon, onView, onEdit }: PokemonCardProps) {
                 </div>
 
                 {/* Content Section */}
-                <div className="p-6">
+                <div className="p-4">
                     {/* Name and Type */}
-                    <div className="mb-4">
-                        <h3 className="text-xl font-bold capitalize text-gray-900 mb-2">
+                    <div className="text-center">
+                        <h3 className="text-lg font-bold capitalize text-gray-900 mb-3">
                             {pokemon.name}
                         </h3>
-                        <Badge className={`${typeColor} text-white border-none capitalize`}>
+                        <Badge className={`${typeColor} text-white border-none capitalize text-sm px-3 py-1`}>
                             {pokemon.type.toLowerCase()}
                         </Badge>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Ruler className="w-4 h-4" />
-                            <span>{pokemon.height}m</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Weight className="w-4 h-4" />
-                            <span>{pokemon.weight}kg</span>
-                        </div>
-                    </div>
-
-                    {/* Abilities */}
-                    <div className="mb-6">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Abilities:</p>
-                        <div className="flex flex-wrap gap-1">
-                            {pokemon.abilities && pokemon.abilities.length > 0 ? (
-                                pokemon.abilities.slice(0, 3).map((pokemonAbility, index) => (
-                                    <span
-                                        key={pokemonAbility.ability.id}
-                                        className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded capitalize"
-                                    >
-                                        {pokemonAbility.ability.name}
-                                    </span>
-                                ))
-                            ) : (
-                                <span className="text-xs text-gray-400">No abilities</span>
-                            )}
-                            {pokemon.abilities && pokemon.abilities.length > 3 && (
-                                <span className="text-xs text-gray-400">
-                                    +{pokemon.abilities.length - 3} more
-                                </span>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex justify-center">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEdit(pokemon);
-                            }}
-                            className="w-full"
-                        >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                        </Button>
                     </div>
                 </div>
             </CardContent>
