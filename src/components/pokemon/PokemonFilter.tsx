@@ -1,7 +1,13 @@
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronDown, Filter } from 'lucide-react';
 import { PokemonType } from '@/types/pokemon';
 
 interface PokemonFiltersProps {
@@ -33,12 +39,16 @@ const typeColors: Record<PokemonType, string> = {
     [PokemonType.STEEL]: 'bg-gray-500 text-white',
     [PokemonType.NORMAL]: 'bg-gray-400 text-white',
 };
+
 export function PokemonFilters({
                                    search,
                                    type,
                                    onSearchChange,
                                    onTypeChange,
                                }: PokemonFiltersProps) {
+    const currentType = type === 'all' || type === '' ? null : type;
+    const currentTypeColor = currentType ? typeColors[currentType as PokemonType] : null;
+
     return (
         <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
@@ -65,25 +75,53 @@ export function PokemonFilters({
                 </div>
             </div>
 
-            {/* Type Filter */}
+            {/* Type Filter Dropdown */}
             <div className="lg:w-48">
-                <Label htmlFor="type-select" className="sr-only">Filter by Type</Label>
-                <Select value={type} onValueChange={onTypeChange}>
-                    <SelectTrigger id="type-select">
-                        <SelectValue placeholder="All types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All types</SelectItem>
+                <Label className="sr-only">Filter by Type</Label>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Filter className="w-4 h-4" />
+                                {currentType ? (
+                                    <>
+                                        <div className={`w-3 h-3 rounded-full ${currentTypeColor}`}></div>
+                                        <span className="capitalize">{currentType.toLowerCase()}</span>
+                                    </>
+                                ) : (
+                                    <span>All types</span>
+                                )}
+                            </div>
+                            <ChevronDown className="w-4 h-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48">
+                        <DropdownMenuItem
+                            onClick={() => onTypeChange('all')}
+                            className={currentType === null ? 'bg-gray-100' : ''}
+                        >
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-gray-300"></div>
+                                <span>All types</span>
+                            </div>
+                        </DropdownMenuItem>
                         {pokemonTypes.map(pokemonType => (
-                            <SelectItem key={pokemonType} value={pokemonType}>
+                            <DropdownMenuItem
+                                key={pokemonType}
+                                onClick={() => onTypeChange(pokemonType)}
+                                className={currentType === pokemonType ? 'bg-gray-100' : ''}
+                            >
                                 <div className="flex items-center gap-2">
                                     <div className={`w-3 h-3 rounded-full ${typeColors[pokemonType]}`}></div>
                                     <span className="capitalize">{pokemonType.toLowerCase()}</span>
                                 </div>
-                            </SelectItem>
+                            </DropdownMenuItem>
                         ))}
-                    </SelectContent>
-                </Select>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
     );

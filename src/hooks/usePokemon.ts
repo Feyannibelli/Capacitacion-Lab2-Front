@@ -3,7 +3,13 @@ import { pokemonApi, abilitiesApi } from '@/lib/api';
 import { PokemonFilters, Pokemon } from '@/types/pokemon';
 import { toast } from '@/hooks/use-toast';
 
-export const usePokemonList = (filters: PokemonFilters) => {
+export interface ExtendedPokemonFilters extends PokemonFilters {
+    limit?: number;
+    sortBy?: 'id' | 'name' | 'type';
+    order?: 'asc' | 'desc';
+}
+
+export const usePokemonList = (filters: ExtendedPokemonFilters) => {
     return useQuery({
         queryKey: ['pokemon', 'list', filters],
         queryFn: () => pokemonApi.getPokemons(filters),

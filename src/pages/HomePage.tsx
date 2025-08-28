@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePokemonList } from '@/hooks/usePokemon';
+import { usePokemonList, ExtendedPokemonFilters } from '@/hooks/usePokemon';
 import { PokemonCard } from '@/components/pokemon/PokemonCard';
 import { PokemonFilters } from '@/components/pokemon/PokemonFilter';
+import { EnhancedPagination } from '@/components/ui/EnhancedPagination';
 import { LoadingGrid, LoadingSpinner } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChevronLeft, ChevronRight, AlertCircle, Grid, List } from 'lucide-react';
+import { AlertCircle, Grid, List } from 'lucide-react';
 import { Pokemon, PokemonType } from '@/types/pokemon';
 import { useSearchParams } from 'react-router-dom';
 
@@ -18,10 +19,10 @@ export function HomePage() {
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [type, setType] = useState(searchParams.get('type') || '');
     const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
+    const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '12'));
     const [viewMode, setViewMode] = useState<'grid' | 'list'>((searchParams.get('view') as 'grid' | 'list') || 'grid');
     const [sortBy, setSortBy] = useState<'id' | 'name' | 'type'>((searchParams.get('sortBy') as 'id' | 'name' | 'type') || 'id');
     const [order, setOrder] = useState<'asc' | 'desc'>((searchParams.get('order') as 'asc' | 'desc') || 'asc');
-    const limit = 12;
 
     const {
         data,
@@ -35,7 +36,7 @@ export function HomePage() {
         limit,
         sortBy,
         order,
-    });
+    } as ExtendedPokemonFilters);
 
     const pokemon = data?.items || [];
     const totalPages = data?.totalPages || 1;
@@ -70,6 +71,12 @@ export function HomePage() {
         setPage(newPage);
         updateSearchParams({ page: newPage.toString() });
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handlePageSizeChange = (newLimit: number) => {
+        setLimit(newLimit);
+        setPage(1); // Reset to first page when changing page size
+        updateSearchParams({ limit: newLimit.toString(), page: '1' });
     };
 
     const handleSortChange = (newSortBy: 'id' | 'name' | 'type') => {
@@ -157,7 +164,7 @@ export function HomePage() {
                                 <div className="flex items-center gap-2">
                                     <span className="text-red-100 text-sm">Sort by:</span>
                                     <div className="flex rounded-lg bg-white/10 p-1">
-                                        <Button
+                                        <button
                                             onClick={() => handleSortChange('id')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                                                 sortBy === 'id'
@@ -166,7 +173,7 @@ export function HomePage() {
                                             }`}
                                         >
                                             Number
-                                        </Button>
+                                        </button>
                                         <button
                                             onClick={() => handleSortChange('name')}
                                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
@@ -309,67 +316,15 @@ export function HomePage() {
                                     </div>
                                 )}
 
-                                {/* Pagination */}
-                                {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-2 pt-12 mt-12 border-t border-gray-100">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePageChange(page - 1)}
-                                            disabled={page <= 1}
-                                            className="hover:bg-red-50 hover:border-red-200"
-                                        >
-                                            <ChevronLeft className="w-4 h-4 mr-1" />
-                                            Previous
-                                        </Button>
-
-                                        <div className="flex items-center gap-2">
-                                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                                let pageNum;
-                                                if (totalPages <= 5) {
-                                                    pageNum = i + 1;
-                                                } else if (page <= 3) {
-                                                    pageNum = i + 1;
-                                                } else if (page >= totalPages - 2) {
-                                                    pageNum = totalPages - 4 + i;
-                                                } else {
-                                                    pageNum = page - 2 + i;
-                                                }
-
-                                                return (
-                                                    <Button
-                                                        key={pageNum}
-                                                        variant={page === pageNum ? 'default' : 'outline'}
-                                                        size="sm"
-                                                        onClick={() => handlePageChange(pageNum)}
-                                                        className={
-                                                            page === pageNum
-                                                                ? 'bg-red-600 hover:bg-red-700'
-                                                                : 'hover:bg-red-50 hover:border-red-200'
-                                                        }
-                                                    >
-                                                        {pageNum}
-                                                    </Button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePageChange(page + 1)}
-                                            disabled={page >= totalPages}
-                                            className="hover:bg-red-50 hover:border-red-200"
-                                        >
-                                            Next
-                                            <ChevronRight className="w-4 h-4 ml-1" />
-                                        </Button>
-                                    </div>
-                                )}
-
-                                <div className="text-center text-sm text-gray-500 pt-6">
-                                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} results
-                                </div>
+                                {/* Enhanced Pagination */}
+                                <EnhancedPagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    pageSize={limit}
+                                    total={total}
+                                    onPageChange={handlePageChange}
+                                    onPageSizeChange={handlePageSizeChange}
+                                />
                             </>
                         )}
                     </div>
